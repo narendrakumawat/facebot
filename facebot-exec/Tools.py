@@ -1,6 +1,4 @@
 import os
 def adjustPathToOS(path):
-   seperator = os.pathsep
-   path.replace('\\', seperator)
-   path.replace('/', seperator)
-   return path
+   seperator = os.path.sep
+   return path.replace('\\', seperator).replace('/', seperator)
