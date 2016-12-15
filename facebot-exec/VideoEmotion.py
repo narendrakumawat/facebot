@@ -2,10 +2,11 @@ import cv2
 import glob
 import random
 import numpy as np
+import Tools as tools
 
 # face classifier paths
-facePath = "C:\\Users\\dbublil\\Downloads\\opencv\\build\\share\\OpenCV\\haarcascades\\haarcascade_frontalface_default.xml"
-smilePath = "C:\\Users\\dbublil\\Downloads\\opencv\\build\\share\\OpenCV\\haarcascades\\haarcascade_smile.xml"
+facePath = tools.adjustPathToOS("OpenCV\\haarcascades\\haarcascade_frontalface_default.xml")
+smilePath = tools.adjustPathToOS("OpenCV\\haarcascades\\haarcascade_smile.xml")
 faceCascade = cv2.CascadeClassifier(facePath)
 
 emotions = ["neutral", "anger", "disgust", "happy", "surprise"]  # Emotion list "contempt","fear","sadness",
