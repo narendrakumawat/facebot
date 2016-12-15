@@ -1,10 +1,10 @@
 import cv2
 import glob
 
-faceDet = cv2.CascadeClassifier("/usr/local/Cellar/opencv/2.4.13.1/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml")
-faceDet2 = cv2.CascadeClassifier("/usr/local/Cellar/opencv/2.4.13.1/share/OpenCV/haarcascades/haarcascade_frontalface_alt2.xml")
-faceDet3 = cv2.CascadeClassifier("/usr/local/Cellar/opencv/2.4.13.1/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml")
-faceDet4 = cv2.CascadeClassifier("/usr/local/Cellar/opencv/2.4.13.1/share/OpenCV/haarcascades/haarcascade_frontalface_alt_tree.xml")
+faceDet = cv2.CascadeClassifier("C:\\Users\\dbublil\\Downloads\\opencv\\build\share\\OpenCV\\haarcascades\\haarcascade_frontalface_default.xml")
+faceDet2 = cv2.CascadeClassifier("C:\\Users\\dbublil\\Downloads\\opencv\\build\share\\OpenCV\\haarcascades\\haarcascade_frontalface_alt2.xml")
+faceDet3 = cv2.CascadeClassifier("C:\\Users\\dbublil\\Downloads\\opencv\\build\share\\OpenCV\\haarcascades\\haarcascade_frontalface_alt.xml")
+faceDet4 = cv2.CascadeClassifier("C:\\Users\\dbublil\\Downloads\\opencv\\build\share\\OpenCV\\haarcascades\\haarcascade_frontalface_alt_tree.xml")
 
 emotions = ["neutral", "anger", "contempt", "disgust", "fear", "happy", "sadness", "surprise"]  # Define emotions
 
@@ -41,12 +41,13 @@ def detect_faces(emotion):
 
         # Cut and save face
         for (x, y, w, h) in facefeatures:  # get coordinates and size of rectangle containing face
-            print "face found in file: %s" % f
+            #print "face found in file: %s" % f
             gray = gray[y:y + h, x:x + w]  # Cut the frame to size
 
             try:
                 out = cv2.resize(gray, (350, 350))  # Resize face so all images have same size
                 cv2.imwrite("dataset/%s/%s.jpg" % (emotion, filenumber), out)  # Write image
+                #print "Image saved"
             except:
                 pass  # If error, pass file
         filenumber += 1  # Increment image number

@@ -93,3 +93,9 @@ ENV/
 
 # mac
 .DS_Store
+
+# early stage dataset images
+facebot-exec/difficult/
+facebot-exec/sorted_set/
+facebot-exec/source_emotion/
+facebot-exec/source_images/

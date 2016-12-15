@@ -2,8 +2,8 @@ import glob
 from shutil import copyfile
 
 emotions = ["neutral", "anger", "contempt", "disgust", "fear", "happy", "sadness", "surprise"]  # Define emotion order
-participants = glob.glob("source_emotion/*")  # Returns a list of all folders with participant numbers
-
+participants = glob.glob("source_emotion\\*")  # Returns a list of all folders with participant numbers
+print participants
 for x in participants:
     part = "%s" % x[-4:]  # store current participant number
     for sessions in glob.glob("%s/*" % x):  # Store list of sessions for current participant

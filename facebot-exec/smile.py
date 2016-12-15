@@ -1,7 +1,7 @@
 import cv2
 
-facePath = "/usr/local/Cellar/opencv/2.4.13.1/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml"
-smilePath = "/usr/local/Cellar/opencv/2.4.13.1/share/OpenCV/haarcascades/haarcascade_smile.xml"
+facePath = "C:\\Users\\dbublil\\Downloads\\opencv\\build\\share\\OpenCV\\haarcascades\\haarcascade_frontalface_default.xml"
+smilePath = "C:\\Users\\dbublil\\Downloads\\opencv\\build\\share\\OpenCV\\haarcascades\\haarcascade_smile.xml"
 faceCascade = cv2.CascadeClassifier(facePath)
 smileCascade = cv2.CascadeClassifier(smilePath)
 
@@ -22,7 +22,7 @@ def detect_smiles():
             gray,
             scaleFactor= sF,
             minNeighbors=8,
-            minSize=(55, 55),
+            minSize=(150, 120),
             flags=cv2.cv.CV_HAAR_SCALE_IMAGE
         )
         # ---- Draw a rectangle around the faces
@@ -36,7 +36,7 @@ def detect_smiles():
                 roi_gray,
                 scaleFactor= 1.7,
                 minNeighbors=22,
-                minSize=(25, 25),
+                minSize=(22, 22),
                 flags=cv2.cv.CV_HAAR_SCALE_IMAGE
                 )
 
