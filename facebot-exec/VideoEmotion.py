@@ -8,9 +8,11 @@ import Tools as tools
 facePath = tools.adjustPathToOS("OpenCV\\haarcascades\\haarcascade_frontalface_default.xml")
 smilePath = tools.adjustPathToOS("OpenCV\\haarcascades\\haarcascade_smile.xml")
 faceCascade = cv2.CascadeClassifier(facePath)
+smileCascade = cv2.CascadeClassifier(smilePath)
 
 emotions = ["neutral", "anger", "disgust", "happy", "surprise"]  # Emotion list "contempt","fear","sadness",
-fishface = cv2.createFisherFaceRecognizer()  # Initialize fisher face classifier
+smileEmotions = ["surprise","happy"] #Emotion list for when a smile was found in the frame.
+
 
 # train face recognizer
 def get_files(emotion):# Define function to get file list, randomly shuffle it and split 80/20
@@ -20,7 +22,7 @@ def get_files(emotion):# Define function to get file list, randomly shuffle it a
     # prediction = files[-int(len(files) * 0.2):]  # get last 20% of file list
     return training
 
-def make_sets():
+def make_sets(emotions):
     training_data = []
     training_labels = []
     for emotion in emotions:
@@ -34,13 +36,14 @@ def make_sets():
 
     return training_data, training_labels
 
-def train_fishface():
-    training_data, training_labels = make_sets()
+def train_fishface(emotions):
+    training_data, training_labels = make_sets(emotions)
 
     print "training fisher face classifier"
     print "size of training set is:", len(training_labels), "images"
+    fishface = cv2.createFisherFaceRecognizer()
     fishface.train(training_data, np.asarray(training_labels))
-    return
+    return fishface
 
 def detect_faces():
     cap = cv2.VideoCapture(0)
@@ -70,8 +73,20 @@ def detect_faces():
             roi_gray = gray[y:y+h, x:x+w]
             zoomed_face = frame[y:y+h, x:x+w]
             zoomed_face = cv2.cvtColor(cv2.resize(zoomed_face, (350,350)),cv2.COLOR_BGR2GRAY)
+            smile = smileCascade.detectMultiScale(
+                roi_gray,
+                scaleFactor=1.7,
+                minNeighbors=22,
+                minSize=(22, 22),
+                flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+            )
+            classifer, emotionArray = generalClassifier, emotions
+            if (smile != ()):
+                classifer, emotionArray = smileClassifier, smileEmotions
+                for (x, y, w, h) in smile:
+                    cv2.rectangle(roi_gray, (x, y), (x + w, y + h), (0, 0, 255), 1)
             cv2.imshow('JustFace', zoomed_face)
-            print(emotions[fishface.predict(zoomed_face)[0]])
+            print(emotionArray[classifer.predict(zoomed_face)[0]])
 
 
         #cv2.cv.Flip(frame, None, 1)
@@ -84,6 +99,8 @@ def detect_faces():
     cv2.destroyAllWindows()
 
 #Run the program
-train_fishface()
+
+generalClassifier = train_fishface(emotions)
+smileClassifier = train_fishface(smileEmotions)
 detect_faces()
 print "Fin"
