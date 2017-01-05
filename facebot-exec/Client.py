@@ -19,41 +19,50 @@ def readb64(base64_string):
 # Create a TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Connect the socket to the port where the server is listening
-server_address = ('localhost', 1337)
-print >>sys.stderr, 'connecting to %s port %s' % server_address
-sock.connect(server_address)
 
-try:
-    num = 0
-    # Send data
-    while True:
-        message = '(' + `(num % 5)` + ',' + `(num % 20)` + ')<EOF>'
+# Connect the socket to the port where the server is listening
+def start():
+    server_address = ('localhost', 1337)
+    print >>sys.stderr, 'connecting to %s port %s' % server_address
+    sock.connect(server_address)
+
+def stop():
+    print >> sys.stderr, 'closing socket'
+    sock.close()
+    cv2.waitKey(0)
+
+def sendLineToServer(line):
+    try:
+        # Send data
+        message = str(line) + '<EOL>'
+        print >> sys.stderr, 'sending "%s"' % message
+        sock.sendall(message)
+
+    except Exception, e:
+        print >> sys.stderr, e
+
+def sendNextToServer():
+    try:
+        # Send data
+        message = '<NEXT>'
         print >> sys.stderr, 'sending "%s"' % message
         sock.sendall(message)
 
         # Look for the response
-        amount_received = 0
         img_str = ''
-        frame_buf = []
 
-        while not img_str.endswith('=='):
+        while not img_str.endswith('<EOF>'):
             data_str = sock.recv(16384)
             img_str += data_str
+
             print >> sys.stderr, 'received "%s"' % data_str
 
+        # when frame received
         if len(img_str) > 0:
-            frame = readb64(img_str)
+            frame = readb64(img_str.replace('<EOF>', ''))
             print >> sys.stderr, frame
-            # if frame:
-            cv2.imshow('game', frame)
-            print >> sys.stderr, num
-        num += 1
-        print >> sys.stderr, num
 
-except Exception, e:
-    print >> sys.stderr, e
-finally:
-    print >> sys.stderr, 'closing socket'
-    sock.close()
-    cv2.waitKey(0)
+        return frame
+
+    except Exception, e:
+        print >> sys.stderr, e
