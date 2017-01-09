@@ -1,28 +1,54 @@
 import Client
-import DetectBlackPixels
+import Processing
 import Camera
 import cv2
 
-Client.start()
 
-while (True):
-    image = Camera.get_image()
-    Camera.show_image('original', image)
+STATUS_TEXT = [
+    "Phase 0: draw lines",
+    "Phase 1: play",
+    "Phase 2: click space to restart"
+]
+STATUS_FUNC = [
+    Processing.phase0DetectAndSendLines,
+    Processing.phase1ProcessingFunc,
+    Processing.phase2ProcessingFunc
+]
 
-    lines = DetectBlackPixels.findBlackLines(image)
-    highlight = DetectBlackPixels.highlightBlack(image, lines[0], (255, 0, 0))
-    # Camera.show_image('highlight', highlight)
 
-    for line in lines:
-        if line != []:
-            Client.sendLineToServer(line)
+def gameLoop():
+    status = 0
 
-    frame = Client.sendNextToServer()
-    if frame.any():
-        Camera.show_image('game', frame)
+    while status < 3:
+        image = Camera.get_image()
+        Camera.show_image('original', image, STATUS_TEXT[status])
 
-    if cv2.waitKey(1) == 27:
-        break  # esc to quit
+        STATUS_FUNC[status]()
 
-cv2.destroyAllWindows()
-Client.stop()
+        frame = Client.getNextFrameFromServer()
+        if frame.any():
+            Camera.show_image('game', frame)
+
+        # space to continue
+        if cv2.waitKey(1) == 32:
+            if status == 2:
+                Client.sendResetToServer()
+            else:
+                Client.sendNextPhaseToServer()
+            status = (status + 1) % (len(STATUS_TEXT) - 1)
+
+        # esc to quit
+        if cv2.waitKey(1) == 27:
+            Client.sendQuitToServer()
+            break
+
+
+def init():
+    Client.start()
+
+    gameLoop()
+
+    cv2.destroyAllWindows()
+    Client.stop()
+
+init()
