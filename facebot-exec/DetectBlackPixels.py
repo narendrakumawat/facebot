@@ -21,14 +21,28 @@ def connectBlack(lines, num, dot, image, pixelBool):
                         image.item(x,y) < 80 and pixelBool[x][y] == False and (x,y) != dot):
                 connectBlack(lines, num, (x,y), image, pixelBool)
 
+def connectBlack(result, dot, image, pixelBool):
+    if pixelBool[dot[0]][dot[1]]:
+        return
+
+    pixelBool[dot[0]][dot[1]] = True
+    result.append(dot)
+
+    for x in range(dot[0] - 1, dot[0] + 2):
+        for y in range(dot[1] - 1, dot[1] + 2):
+            if (x in RANGE_X and y in RANGE_Y and
+                        image.item(x,y) < 80 and pixelBool[x][y] == False and (x,y) != dot):
+                connectBlack(result, (x,y), image, pixelBool)
+
+
 def linearDistance(dot1, dot2):
     return math.sqrt(math.pow((dot1[0] - dot2[0]), 2) + math.pow((dot1[1] - dot2[1]), 2))
 
 def findBlackLines(image):
-    lines = [[], [], []]
+    lines = []
+    curLine = []
     bases = []
     pixelBool = [[False] * 640] * 480
-    num = 0
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     for i in xrange(COLS):
@@ -36,21 +50,15 @@ def findBlackLines(image):
             black = (gray_image.item(i, j))
 
             if (black < BLACK_HIGH_BOUNDRY):
-                if (num < 3):
-                    connectBlack(lines, num, (i, j), gray_image, pixelBool)
+                connectBlack(curLine, (i, j), gray_image, pixelBool)
+                if len(curLine) > 50:
+                    lines.append(curLine)
 
-                    if len(lines[num]) < 30:
-                        lines[num] = []
-                    if (lines[num] != []):
-                        bases.append((i,j))
-                        num = num + 1
 
-    for i in range (0,3):
-        if (lines[i] != []):
-            findLineBase(lines[i], bases, pixelBool)
-
-            if (len(bases) > i):
-                lines[i] = sorted(
+    for i in range (len(lines)):
+        findLineBase(lines[i], bases, pixelBool)
+        if (len(bases) > i):
+            lines[i] = sorted(
                     lines[i],
                     lambda dot1, dot2: int(linearDistance(bases[i], dot1) - linearDistance(bases[i], dot2))
                 )
@@ -83,8 +91,7 @@ def findCorner(line, pixelBool):
             return dot
 
 def findLineBase(line, bases, pixelBool):
-    if line != []:
-        corner = findCorner(line, pixelBool)
+    corner = findCorner(line, pixelBool)
 
-        if corner != None:
-            bases.append(corner)
+    if corner != None:
+        bases.append(corner)
