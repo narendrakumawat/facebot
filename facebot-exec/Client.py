@@ -41,7 +41,7 @@ def sendLineToServer(line):
     except Exception, e:
         print >> sys.stderr, e
 
-def sendNextToServer():
+def getNextFrameFromServer():
     try:
         # Send data
         message = '<NEXT>'
@@ -63,6 +63,36 @@ def sendNextToServer():
             print >> sys.stderr, frame
 
         return frame
+
+    except Exception, e:
+        print >> sys.stderr, e
+
+def sendNextPhaseToServer():
+    try:
+        # Send data
+        message = '<PHASE>'
+        print >> sys.stderr, 'sending "%s"' % message
+        sock.sendall(message)
+
+    except Exception, e:
+        print >> sys.stderr, e
+
+def sendResetToServer():
+    try:
+        # Send data
+        message = '<RESET>'
+        print >> sys.stderr, 'sending "%s"' % message
+        sock.sendall(message)
+
+    except Exception, e:
+        print >> sys.stderr, e
+
+def sendQuitToServer():
+    try:
+        # Send data
+        message = '<QUIT>'
+        print >> sys.stderr, 'sending "%s"' % message
+        sock.sendall(message)
 
     except Exception, e:
         print >> sys.stderr, e
