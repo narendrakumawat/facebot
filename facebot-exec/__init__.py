@@ -23,7 +23,7 @@ def gameLoop():
         image = Camera.get_image()
         Camera.show_image('original', image, STATUS_TEXT[status])
 
-        STATUS_FUNC[status]()
+        STATUS_FUNC[status](image)
 
         frame = Client.getNextFrameFromServer()
         if frame.any():
