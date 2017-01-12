@@ -24,6 +24,6 @@ def get_image_external():
 
 def show_image(windowName, image, statusText):
     font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(image, statusText, (10, 500), font, 1, (255, 0, 0), 2)
+    cv2.putText(image, statusText, (10, 20), font, 1, (255, 0, 0), 2)
 
     cv2.imshow(windowName, image)

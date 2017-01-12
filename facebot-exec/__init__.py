@@ -2,6 +2,7 @@ import Client
 import Processing
 import Camera
 import cv2
+import DetectBlackPixels
 
 
 STATUS_TEXT = [
@@ -19,23 +20,30 @@ STATUS_FUNC = [
 def gameLoop():
     status = 0
 
-    while status < 3:
+    while True:
         image = Camera.get_image()
         Camera.show_image('original', image, STATUS_TEXT[status])
 
-        STATUS_FUNC[status](image)
+        # STATUS_FUNC[status](image)
 
         frame = Client.getNextFrameFromServer()
-        if frame.any():
-            Camera.show_image('game', frame)
+        if len(frame) > 0:
+            Camera.show_image('game', frame, STATUS_TEXT[status])
 
         # space to continue
         if cv2.waitKey(1) == 32:
-            if status == 2:
+            Client.sendNextPhaseToServer()
+            status = (status + 1) % len(STATUS_TEXT)
+
+            if status == 1:
+                lines = DetectBlackPixels.findBlackLines(image)
+
+                for line in lines:
+                    if line != []:
+                        Client.sendLineToServer(line)
+
+            elif status == 0:
                 Client.sendResetToServer()
-            else:
-                Client.sendNextPhaseToServer()
-            status = (status + 1) % (len(STATUS_TEXT) - 1)
 
         # esc to quit
         if cv2.waitKey(1) == 27:

@@ -1,7 +1,8 @@
 import cv2
 import math
 
-BLACK_HIGH_BOUNDRY = 80
+BLACK_HIGH_BOUNDRY = 3
+MAX_LINES = 200
 ROWS = 640
 COLS = 480
 SIZE = (ROWS, COLS)
@@ -47,12 +48,14 @@ def findBlackLines(image):
 
     for i in xrange(COLS):
         for j in xrange(ROWS):
-            black = (gray_image.item(i, j))
+            if (len(lines) >= MAX_LINES):
+                black = (gray_image.item(i, j))
 
-            if (black < BLACK_HIGH_BOUNDRY):
-                connectBlack(curLine, (i, j), gray_image, pixelBool)
-                if len(curLine) > 50:
-                    lines.append(curLine)
+                if (black < BLACK_HIGH_BOUNDRY):
+                    connectBlack(curLine, (i, j), gray_image, pixelBool)
+                    if len(curLine) > 50:
+                        lines.append(curLine)
+
 
 
     for i in range (len(lines)):
