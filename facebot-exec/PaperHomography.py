@@ -130,8 +130,8 @@ if __name__ == '__main__':
         rows, cols, color = image.shape
 
         # Rotate 90 degrees to the right
-        M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 270, 1)
-        image = cv2.warpAffine(image, M, (cols, rows))
+        # M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 270, 1)
+        # image = cv2.warpAffine(image, M, (cols, rows))
 
         # cv2.imshow('ga',image)
         ratio = image.shape[0] / 500.0
@@ -147,10 +147,10 @@ if __name__ == '__main__':
         # show the original image and the edge detected image
         print "STEP 1: Edge Detection"
         # cv2.imshow("Orig", orig)
-        cv2.imshow("Image", image)
-        cv2.imshow("Edged", edged)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # cv2.imshow("Image", image)
+        # cv2.imshow("Edged", edged)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
         # find the contours in the edged image, keeping only the
         # largest ones, and initialize the screen contour
@@ -168,7 +168,6 @@ if __name__ == '__main__':
             # can assume that we have found our screen
             if len(approx) == 4:
                 screenCnt = approx
-                print "cnt" + str(screenCnt)
                 # Bublil: I added a flag here to avoid crashes when no rectangle in picture.
                 # Also, screenCNT is a list of 4 points, represnting the points of the rectangle.
                 flag = True
@@ -178,9 +177,9 @@ if __name__ == '__main__':
             # show the contour (outline) of the piece of paper
             print "STEP 2: Find contours of paper"
             # cv2.drawContours(image, [screenCnt], -1, (0, 255, 0), 2)
-            cv2.imshow("Outline", image)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            # cv2.imshow("Outline", image)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
 
             # apply the four point transform to obtain a top-down
             # view of the original image
@@ -199,22 +198,21 @@ if __name__ == '__main__':
             print "STEP 3: Apply perspective transform"
             # Not perfect yet.
             pikachu = cv2.resize(pikachu,(paperSize[1],paperSize[2]))
-            grayPika = cv2.cvtColor(pikachu, cv2.COLOR_BGR2GRAY)
-            src = np.array([[0, grayPika.shape[0]], [grayPika.shape[1], grayPika.shape[0]], [grayPika.shape[1], 0], [0, 0]], np.float32)
-            src = np.array([[0, 0], [grayPika.shape[1]-1, 0],[grayPika.shape[1]-1, grayPika.shape[0]-1],[0, grayPika.shape[0]-1]],np.float32)
-            dst = np.array([[tuples[3], tuples[0], tuples[1], tuples[2]]], np.float32)
+            src = np.array([[0, 0], [pikachu.shape[1]-1, 0],[pikachu.shape[1]-1, pikachu.shape[0]-1],[0, pikachu.shape[0]-1]],np.float32)
+            # dst = np.array([[tuples[3], tuples[0], tuples[1], tuples[2]]], np.float32)
             dst = np.array([[tuples[1], tuples[2], tuples[3], tuples[0]]], np.float32)
             ret = cv2.getPerspectiveTransform(src, dst)
             pikachu = cv2.warpPerspective(pikachu,ret,((image.shape[1],image.shape[0])))
-            grayPika = cv2.cvtColor(pikachu, cv2.COLOR_BGR2GRAY)
-            changed = np.array(getPaperOnly(pikachu, grayPika))
+            # grayPika = cv2.cvtColor(pikachu, cv2.COLOR_BGR2GRAY)
+            # # changed = np.array(getPaperOnly(pikachu, grayPika))
             cv2.imshow("wtf",pikachu)
             topleft = findTopLeft(tuples)
             mergeImages(pikachu,image,topleft,paperSizes)
             # image[paperSize[0][1]: paperSize[0][1] + changed.shape[0], paperSize[0][0] : paperSize[0][0] + changed.shape[1]] = changed
             cv2.imshow("Original", imutils.resize(image))
             cv2.imshow("Scanned", imutils.resize(warped, height=640, width=480))
-        cv2.waitKey(0)
+            print "done"
+        # cv2.waitKey(0)
 
     #Attemps at getting different prespective, but no success
         # ptsPick = find_corners(pikachu)
