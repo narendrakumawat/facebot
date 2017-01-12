@@ -213,6 +213,7 @@ if __name__ == '__main__':
             cv2.imshow("Scanned", imutils.resize(warped, height=640, width=480))
             print "done"
         # cv2.waitKey(0)
+            "push"
 
     #Attemps at getting different prespective, but no success
         # ptsPick = find_corners(pikachu)
