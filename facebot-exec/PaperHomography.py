@@ -7,21 +7,7 @@ from pyimagesearch.transform import four_point_transform
 from pyimagesearch import imutils
 from skimage.filters import threshold_adaptive
 import numpy as np
-import argparse
 import cv2
-
-# construct the argument parser and parse the arguments
-# ap = argparse.ArgumentParser()
-# ap.add_argument("-i", "--image", required = True,
-# 	help = "Path to the image to be scanned")
-# args = vars(ap.parse_args())
-
-# load the image and compute the ratio of the old height
-# to the new height, clone it, and resize it
-camera = cv2.VideoCapture(0)
-for i in range(0, 10):
-    camera.read()
-pikachu = cv2.imread('Pikachu.jpg')
 
 def find_corners(image):
     im = cv2.Canny(image, 100, 200)
@@ -34,9 +20,8 @@ def arrayToTuple(arr):
     res = []
     for i in range (0,4):
         res.append([arr[i][0],arr[i][1]])
-    print res
+    # print res
     return res
-
 
 def changePerspective(image, pts):
 	# obtain a consistent order of the points and unpack them
@@ -100,19 +85,17 @@ def paperSizer(points):
     width = abs(topLeft[1] - topRight[1])
     return (topLeft, height,width)
 
-
 def getPaperOnly(image, grayImage):
     return image[150:260,140:480]
 
 # Assume 2 pictures are of same size.
-def mergeImages(foreground, background, topLeft, size):
-    print str(topLeft) + "YOROYORO" + str(size)
-    for x in xrange (topLeft[0]- 100,topleft[0] + size[0]):
-        for y in xrange (topleft[1], topleft[1] + size[1] + 250):
+def mergeImages(foreground, background):
+    # print str(topLeft) + "YOROYORO" + str(size)
+    for x in xrange (0,foreground.shape[0]):
+        for y in xrange (0, foreground.shape[1]):
             if foreground.item(x,y,0) != 0 or foreground.item(x,y,1) != 0 or foreground.item(x,y,2) != 0:
                 background[x,y] = foreground[x,y]
     return
-
 
 def findTopLeft(tuples):
     minX = 10000
@@ -122,105 +105,88 @@ def findTopLeft(tuples):
         if tuples[i][1] < minY: minY = tuples[i][1]
     return (minX, minY)
 
+def getPaperPoints(image):
 
-if __name__ == '__main__':
+    # convert the image to grayscale, blur it, and find edges
+    # in the image
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    edged = cv2.Canny(gray, 75, 200)
+
+    # show the original image and the edge detected image
+    print "STEP 1: Edge Detection"
+
+    # find the contours in the edged image, keeping only the
+    # largest ones, and initialize the screen contour
+    (cnts, _) = cv2.findContours(edged, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:5]
+
+    # loop over the contours
+    for c in cnts:
+        # approximate the contour
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+
+        # if our approximated contour has four points, then we
+        # can assume that we have found our screen
+        if len(approx) == 4:
+
+            return approx.reshape(4,2)
+            # Bublil: I added a flag here to avoid crashes when no rectangle in picture.
+            # Also, screenCNT is a list of 4 points, representing the points of the rectangle.
+
+def scanInkFromImage(image, paperPoints):
+    # show the contour (outline) of the piece of paper
+    print "STEP 2: Find contours of paper"
+
+    # apply the four point transform to obtain a top-down
+    # view of the original image
+    warped = four_point_transform(image, paperPoints)
+    tuples = arrayToTuple(paperPoints)
+    paperSize = paperSizer(sorted(tuples))
+    # convert the warped image to grayscale, then threshold it
+    # to give it that 'black and white' paper effect
+    warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+    warped = threshold_adaptive(warped, 251, offset=10)
+    warped = warped.astype("uint8") * 255
+    return warped
+
+def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
+    # show the original and scanned images
+    print "STEP 3: Apply perspective transform"
+    # Resize image to paper size
+    imageToImplant = cv2.resize(imageToImplant, (paperSize[0], paperSize[1]))
+    src = np.array(
+        [[0, 0], [imageToImplant.shape[1] - 1, 0], [imageToImplant.shape[1] - 1, imageToImplant.shape[0] - 1], [0, imageToImplant.shape[0] - 1]],
+        np.float32)
+    # dst = np.array([[tuples[3], tuples[0], tuples[1], tuples[2]]], np.float32)
+    dst = np.array([[pointAsTuple[1], pointAsTuple[2], pointAsTuple[3], pointAsTuple[0]]], np.float32)
+    ret = cv2.getPerspectiveTransform(src, dst)
+    imageToImplantPaperPerspective = cv2.warpPerspective(imageToImplant, ret, ((paperImage.shape[1], paperImage.shape[0])))
+    mergeImages(imageToImplantPaperPerspective, paperImage)
+    return paperImage
+
+def runDemo():
+    pikachu = cv2.imread('Pikachu.jpg')
     while (True):
-        ret, image = camera.read()
-        image = cv2.imread('IMG_9980.JPG')
-        rows, cols, color = image.shape
+        paperImage = cv2.imread('IMG_9980.JPG')
+        paperImage = imutils.resize(paperImage, height=480, width= 640)
+        points = getPaperPoints(paperImage)
 
-        # Rotate 90 degrees to the right
-        # M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 270, 1)
-        # image = cv2.warpAffine(image, M, (cols, rows))
+        # apply the four point transform to obtain a top-down
+        # view of the original image
+        pointAsTuple = arrayToTuple(points)
+        paperSize = paperSizer(sorted(pointAsTuple))
+        paperSizes = (paperSize[1], paperSize[2])
+        scannedInk = scanInkFromImage(paperImage,points)
 
-        # cv2.imshow('ga',image)
-        ratio = image.shape[0] / 500.0
-        orig = image.copy()
-        image = imutils.resize(image, height=500)
+        # show the original and scanned images
+        # print "STEP 3: Apply perspective transform"
+        paperImage = implantFrameOnPaper(paperImage,pikachu,paperSizes, pointAsTuple)
+        cv2.imshow("Homogriphied", imutils.resize(paperImage))
+        cv2.imshow("Scanned", imutils.resize(scannedInk, height=640, width=480))
+        print "done"
+        cv2.waitKey(0)
 
-        # convert the image to grayscale, blur it, and find edges
-        # in the image
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (5, 5), 0)
-        edged = cv2.Canny(gray, 75, 200)
+runDemo()
 
-        # show the original image and the edge detected image
-        print "STEP 1: Edge Detection"
-        # cv2.imshow("Orig", orig)
-        # cv2.imshow("Image", image)
-        # cv2.imshow("Edged", edged)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-        # find the contours in the edged image, keeping only the
-        # largest ones, and initialize the screen contour
-        (cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:5]
-
-        # loop over the contours
-        flag = False
-        for c in cnts:
-            # approximate the contour
-            peri = cv2.arcLength(c, True)
-            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-
-            # if our approximated contour has four points, then we
-            # can assume that we have found our screen
-            if len(approx) == 4:
-                screenCnt = approx
-                # Bublil: I added a flag here to avoid crashes when no rectangle in picture.
-                # Also, screenCNT is a list of 4 points, represnting the points of the rectangle.
-                flag = True
-                break
-
-        if (flag):
-            # show the contour (outline) of the piece of paper
-            print "STEP 2: Find contours of paper"
-            # cv2.drawContours(image, [screenCnt], -1, (0, 255, 0), 2)
-            # cv2.imshow("Outline", image)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
-
-            # apply the four point transform to obtain a top-down
-            # view of the original image
-            warped = four_point_transform(orig, screenCnt.reshape(4, 2) * ratio)
-            tuples = arrayToTuple(screenCnt.reshape(4,2))
-            paperSize = paperSizer(sorted(tuples))
-            paperSizes = (paperSize[1], paperSize[2])
-            print str(paperSize)
-            # convert the warped image to grayscale, then threshold it
-            # to give it that 'black and white' paper effect
-            warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-            warped = threshold_adaptive(warped, 251, offset=10)
-            warped = warped.astype("uint8") * 255
-
-            # show the original and scanned images
-            print "STEP 3: Apply perspective transform"
-            # Not perfect yet.
-            pikachu = cv2.resize(pikachu,(paperSize[1],paperSize[2]))
-            src = np.array([[0, 0], [pikachu.shape[1]-1, 0],[pikachu.shape[1]-1, pikachu.shape[0]-1],[0, pikachu.shape[0]-1]],np.float32)
-            # dst = np.array([[tuples[3], tuples[0], tuples[1], tuples[2]]], np.float32)
-            dst = np.array([[tuples[1], tuples[2], tuples[3], tuples[0]]], np.float32)
-            ret = cv2.getPerspectiveTransform(src, dst)
-            pikachu = cv2.warpPerspective(pikachu,ret,((image.shape[1],image.shape[0])))
-            # grayPika = cv2.cvtColor(pikachu, cv2.COLOR_BGR2GRAY)
-            # # changed = np.array(getPaperOnly(pikachu, grayPika))
-            cv2.imshow("wtf",pikachu)
-            topleft = findTopLeft(tuples)
-            mergeImages(pikachu,image,topleft,paperSizes)
-            # image[paperSize[0][1]: paperSize[0][1] + changed.shape[0], paperSize[0][0] : paperSize[0][0] + changed.shape[1]] = changed
-            cv2.imshow("Original", imutils.resize(image))
-            cv2.imshow("Scanned", imutils.resize(warped, height=640, width=480))
-            print "done"
-        # cv2.waitKey(0)
-            "push"
-
-    #Attemps at getting different prespective, but no success
-        # ptsPick = find_corners(pikachu)
-        # ptsImg = find_corners(image)
-        # T = cv2.getPerspectiveTransform(ptsPick, ptsImg)
-        # # pikachu = cv2.warpPerspective(pikachu,T,image.shape[:2])
-        # inputQuad = ((-30,-60), (pikachu.shape[1], -50), (pikachu.shape[1] + 100, pikachu.shape[0] + 50), (-50, pikachu.shape[0] + 50))
-        # print inputQuad
-        # lambdaa = cv2.getPerspectiveTransform(inputQuad,tuples)
-        # pikachu = cv2.warpPerspective(np.float32(pikachu), lambdaa, pikachu.shape)
