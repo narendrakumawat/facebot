@@ -8,6 +8,9 @@ from pyimagesearch import imutils
 from skimage.filters import threshold_adaptive
 import numpy as np
 import cv2
+import Utils
+import Camera
+import time
 
 def find_corners(image):
     im = cv2.Canny(image, 100, 200)
@@ -166,27 +169,87 @@ def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     mergeImages(imageToImplantPaperPerspective, paperImage)
     return paperImage
 
-def runDemo():
+def runDemoStill():
     pikachu = cv2.imread('Pikachu.jpg')
-    while (True):
-        paperImage = cv2.imread('IMG_9980.JPG')
+    paperImage = cv2.imread('IMG_9976.JPG')
+    M = cv2.getRotationMatrix2D((paperImage.shape[1] / 2, paperImage.shape[0] / 2), 270, 1)
+    paperImage = cv2.warpAffine(paperImage, M, (paperImage.shape[1], paperImage.shape[0]))
+    paperImage = imutils.resize(paperImage, height=480, width= 640)
+    points = getPaperPoints(paperImage)
+
+    # apply the four point transform to obtain a top-down
+    # view of the original image
+    pointAsTuple = arrayToTuple(points)
+    paperSize = paperSizer(sorted(pointAsTuple))
+    paperSizes = (paperSize[1], paperSize[2])
+    scannedInk = scanInkFromImage(paperImage,points)
+
+    # show the original and scanned images
+    # print "STEP 3: Apply perspective transform"
+    paperImage = implantFrameOnPaper(paperImage,pikachu,paperSizes, pointAsTuple)
+    cv2.imshow("Homogriphied", imutils.resize(paperImage))
+    cv2.imshow("Scanned", imutils.resize(scannedInk, height=640, width=480))
+    print "done"
+    cv2.waitKey(0)
+
+def runDemoVideo():
+    pikachu = cv2.imread('Pikachu.jpg')
+    path = Utils.adjustPathToOS("C:\Users\dbublil\Desktop\ImagesFOrCBV\PaperVideo (1-16-2017 6-07-27 PM)\PaperVideo ")
+    n = 1
+    while (n < 50):
+        n = n + 1
+        curPath = path + str(n) + ".jpg"
+        paperImage = cv2.imread(curPath)
+        # M = cv2.getRotationMatrix2D((paperImage.shape[1] / 2, paperImage.shape[0] / 2), 270, 1)
+        # paperImage = cv2.warpAffine(paperImage, M, (paperImage.shape[1], paperImage.shape[0]))
         paperImage = imutils.resize(paperImage, height=480, width= 640)
         points = getPaperPoints(paperImage)
 
         # apply the four point transform to obtain a top-down
         # view of the original image
-        pointAsTuple = arrayToTuple(points)
-        paperSize = paperSizer(sorted(pointAsTuple))
-        paperSizes = (paperSize[1], paperSize[2])
-        scannedInk = scanInkFromImage(paperImage,points)
+        if (points != None):
+            pointAsTuple = arrayToTuple(points)
+            paperSize = paperSizer(sorted(pointAsTuple))
+            paperSizes = (paperSize[1], paperSize[2])
+            scannedInk = scanInkFromImage(paperImage,points)
 
-        # show the original and scanned images
-        # print "STEP 3: Apply perspective transform"
-        paperImage = implantFrameOnPaper(paperImage,pikachu,paperSizes, pointAsTuple)
-        cv2.imshow("Homogriphied", imutils.resize(paperImage))
-        cv2.imshow("Scanned", imutils.resize(scannedInk, height=640, width=480))
-        print "done"
-        cv2.waitKey(0)
+            # show the original and scanned images
+            # print "STEP 3: Apply perspective transform"
+            paperImage = implantFrameOnPaper(paperImage,pikachu,paperSizes, pointAsTuple)
+            cv2.imshow("Homogriphied", imutils.resize(paperImage))
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            # cv2.imshow("Scanned", imutils.resize(scannedInk, height=640, width=480))
 
-runDemo()
+def runDemoVideoCam():
+    pikachu = cv2.imread('Pikachu.jpg')
+    # path = Utils.adjustPathToOS("C:\Users\dbublil\Desktop\ImagesFOrCBV\PaperVideo (1-16-2017 6-07-27 PM)\PaperVideo ")
+    # n = 1
+    while (True):
+        # n = n + 1
+        # curPath = path + str(n) + ".jpg"
+        paperImage = Camera.get_image_external()
+        # M = cv2.getRotationMatrix2D((paperImage.shape[1] / 2, paperImage.shape[0] / 2), 270, 1)
+        # paperImage = cv2.warpAffine(paperImage, M, (paperImage.shape[1], paperImage.shape[0]))
+        paperImage = imutils.resize(paperImage, height=480, width= 640)
+        points = getPaperPoints(paperImage)
+
+        # apply the four point transform to obtain a top-down
+        # view of the original image
+        if (points != None):
+            pointAsTuple = arrayToTuple(points)
+            paperSize = paperSizer(sorted(pointAsTuple))
+            paperSizes = (paperSize[1], paperSize[2])
+            scannedInk = scanInkFromImage(paperImage,points)
+
+            # show the original and scanned images
+            # print "STEP 3: Apply perspective transform"
+            paperImage = implantFrameOnPaper(paperImage,pikachu,paperSizes, pointAsTuple)
+            cv2.imshow("Homogriphied", imutils.resize(paperImage))
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+# cv2.imshow('cam',Camera.get_image_external())
+# runDemoStill()
+# runDemoVideo()
+runDemoVideoCam()
 

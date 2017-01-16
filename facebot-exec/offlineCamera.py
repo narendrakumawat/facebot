@@ -2,7 +2,7 @@ import Camera
 import cv2
 
 while (True):
-    image = Camera.get_image_external()
+    image = Camera.get_image()
     Camera.show_image('localhost',image,'test')
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
