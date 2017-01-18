@@ -132,6 +132,9 @@ def getPaperPoints(image):
 
         # if our approximated contour has four points, then we
         # can assume that we have found our screen
+        # TODO: Detect if there's a duplicate point in the result and not return it
+        # TODO: if so. To make it more harsh, It's probably better
+        # TODO: to demand the points to have a minimal linear distance thereshold between them.
         if len(approx) == 4:
 
             return approx.reshape(4,2)
@@ -171,7 +174,7 @@ def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
 
 def runDemoStill():
     pikachu = cv2.imread('Pikachu.jpg')
-    paperImage = cv2.imread('IMG_9976.JPG')
+    paperImage = cv2.imread(Utils.adjustPathToOS('C:\Users\dbublil\Desktop\ImagesFOrCBV\PaperVideo (1-16-2017 6-07-27 PM)\PaperVideo 11.jpg'))
     M = cv2.getRotationMatrix2D((paperImage.shape[1] / 2, paperImage.shape[0] / 2), 270, 1)
     paperImage = cv2.warpAffine(paperImage, M, (paperImage.shape[1], paperImage.shape[0]))
     paperImage = imutils.resize(paperImage, height=480, width= 640)
@@ -225,6 +228,7 @@ def runDemoVideoCam():
     pikachu = cv2.imread('Pikachu.jpg')
     # path = Utils.adjustPathToOS("C:\Users\dbublil\Desktop\ImagesFOrCBV\PaperVideo (1-16-2017 6-07-27 PM)\PaperVideo ")
     # n = 1
+    lastGoodFrame = None
     while (True):
         # n = n + 1
         # curPath = path + str(n) + ".jpg"
@@ -241,13 +245,16 @@ def runDemoVideoCam():
             paperSize = paperSizer(sorted(pointAsTuple))
             paperSizes = (paperSize[1], paperSize[2])
             scannedInk = scanInkFromImage(paperImage,points)
-
+            cv2.imshow("Ink",scannedInk)
             # show the original and scanned images
             # print "STEP 3: Apply perspective transform"
             paperImage = implantFrameOnPaper(paperImage,pikachu,paperSizes, pointAsTuple)
-            cv2.imshow("Homogriphied", imutils.resize(paperImage))
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            lastGoodFrame = paperImage.copy()
+        elif (lastGoodFrame != None):
+            paperImage = lastGoodFrame
+        cv2.imshow("Homogriphied", imutils.resize(paperImage))
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 # cv2.imshow('cam',Camera.get_image_external())
 # runDemoStill()
 # runDemoVideo()
