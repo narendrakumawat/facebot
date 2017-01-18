@@ -1,8 +1,11 @@
 import Client
 import DetectBlackPixels
+import PaperHomography
 
 def phase0DetectAndSendLines(image):
-    lines = DetectBlackPixels.findBlackLines(image)
+    paperPoints = PaperHomography.getPaperPoints(image)
+    scannedContent = PaperHomography.scanInkFromImage(image,paperPoints)
+    lines = DetectBlackPixels.findBlackLines(scannedContent)
     # highlight = DetectBlackPixels.highlightBlack(image, lines[0], (255, 0, 0))
     # Camera.show_image('highlight', highlight)
 
