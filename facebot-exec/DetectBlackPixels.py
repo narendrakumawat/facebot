@@ -43,7 +43,8 @@ def findBlackLines(image):
     curLine = []
     bases = []
     pixelBool = [[False] * 640] * 480
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray_image = image
 
     for i in xrange(COLS):
         for j in xrange(ROWS):

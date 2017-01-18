@@ -10,7 +10,6 @@ import numpy as np
 import cv2
 import Utils
 import Camera
-import time
 
 def find_corners(image):
     im = cv2.Canny(image, 100, 200)
@@ -161,7 +160,7 @@ def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     # show the original and scanned images
     print "STEP 3: Apply perspective transform"
     # Resize image to paper size
-    imageToImplant = cv2.resize(imageToImplant, (paperSize[0], paperSize[1]))
+    imageToImplant = cv2.resize(imageToImplant, paperSize)
     src = np.array(
         [[0, 0], [imageToImplant.shape[1] - 1, 0], [imageToImplant.shape[1] - 1, imageToImplant.shape[0] - 1], [0, imageToImplant.shape[0] - 1]],
         np.float32)
@@ -258,5 +257,5 @@ def runDemoVideoCam():
 # cv2.imshow('cam',Camera.get_image_external())
 # runDemoStill()
 # runDemoVideo()
-runDemoVideoCam()
+# runDemoVideoCam()
 
