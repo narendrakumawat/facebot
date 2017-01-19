@@ -12,6 +12,9 @@ import Utils
 import Camera
 
 backGroundTriplet = (255,0,255)
+WHITE_THRESHOLD = 220
+
+
 def find_corners(image):
     im = cv2.Canny(image, 100, 200)
 
@@ -99,6 +102,9 @@ def isBlack(b, g, r):
 def isBackground(b, g, r):
     return (b,g,r) == backGroundTriplet
 
+def isWhiteish(b, g, r):
+    return np.mean(b, g, r) > WHITE_THRESHOLD
+
 
 def mergeImages(foreground, background):
     # print str(topLeft) + "YOROYORO" + str(size)
@@ -109,7 +115,11 @@ def mergeImages(foreground, background):
             g = foreground.item(x, y, 1)
             r = foreground.item(x, y, 0)
             if not (isBlack(b,g,r) or isBackground(b,g,r)):
-                background[x,y] = foreground[x,y]
+                b = background.item(x, y, 0)
+                g = background.item(x, y, 1)
+                r = background.item(x, y, 0)
+                if not (isWhiteish(b, g, r)):
+                    background[x,y] = foreground[x,y]
     return
 
 def findTopLeft(tuples):
