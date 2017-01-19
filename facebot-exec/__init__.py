@@ -20,15 +20,32 @@ STATUS_FUNC = [
 ]
 
 
+def centerOfRect(paperPoints):
+    sumX = 0
+    sumY = 0
+    for i in range (0,len(paperPoints)):
+        sumX += paperPoints[i][0]
+        sumY += paperPoints[i][1]
+    return (sumX / 4, sumY  / 4)
+
+
+def isDifferentRectangle(lastPaperPoints, paperPoints):
+    centerOfLast = centerOfRect(lastPaperPoints)
+    centerOfThis = centerOfRect(paperPoints)
+    return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 50
+    pass
+
+
 def gameLoop():
     status = 0
+    lastPaperPoints = None
+    scannedInk = None
 
     while status < 3:
         # image = Camera.get_image()
-        image = cv2.imread('IMG_9980.JPG')
-        image = imutils.resize(image, height=480, width=640)
-        M = cv2.getRotationMatrix2D((image.shape[1] / 2, image.shape[0] / 2), 270, 1)
-        image = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
+        paperImage = Camera.get_image_external()
+        paperImage = cv2.flip(paperImage,1)
+        paperImage = imutils.resize(paperImage, height=480, width=640)
         # Camera.show_image('original', image, STATUS_TEXT[status])
 
         # STATUS_FUNC[status](image)
@@ -36,28 +53,44 @@ def gameLoop():
         if frame.any():
             # Camera.show_image('game', frame)
 
-            points = PaperHomography.getPaperPoints(image)
+            paperPoints = PaperHomography.getPaperPoints(paperImage)
+            pointAsTuple = None
+            if (paperPoints != None):
+                # apply the four point transform to obtain a top-down
+                # view of the original image
+                if (lastPaperPoints != None):
+                    if (not isDifferentRectangle(lastPaperPoints, paperPoints)):
+                        lastPaperPoints = paperPoints
+                    else:
+                        paperPoints = lastPaperPoints
+                pointAsTuple = PaperHomography.arrayToTuple(paperPoints)
+                lastPaperPoints = paperPoints
+            elif lastPaperPoints != None:
+                pointAsTuple = PaperHomography.arrayToTuple(lastPaperPoints)
 
-            # apply the four point transform to obtain a top-down
-            # view of the original image
-            pointAsTuple = PaperHomography.arrayToTuple(points)
-            paperSize = PaperHomography.paperSizer(sorted(pointAsTuple))
-            paperSizes = (paperSize[1], paperSize[2])
-            scannedInk = PaperHomography.scanInkFromImage(image, points)
+            if pointAsTuple != None:
+                paperSize = PaperHomography.paperSizer(sorted(pointAsTuple))
+                paperSizes = (paperSize[1], paperSize[2])
+                #
+                # print str(lastPoints) + "KKK"
+                # if lastPoints[0] > 0 and lastPoints[1] > 0:
+                scannedInk = PaperHomography.scanInkFromImage(paperImage, lastPaperPoints)
 
-            # show the original and scanned images
-            # print "STEP 3: Apply perspective transform"
-            paperImage = PaperHomography.implantFrameOnPaper(image, frame, paperSizes, pointAsTuple)
+                # show the original and scanned images
+                # print "STEP 3: Apply perspective transform"
+                paperImage = PaperHomography.implantFrameOnPaper(paperImage, frame, paperSizes, pointAsTuple)
+
             cv2.imshow("Homogriphied", imutils.resize(paperImage))
 
         # space to continue
         if cv2.waitKey(1) == 32:
             if status == 0:
-                lines = DetectBlackPixels.findBlackLines(imutils.resize(scannedInk, height=640, width=480))
+                if scannedInk != None:
+                    lines = DetectBlackPixels.findBlackLines(imutils.resize(scannedInk, height=640, width=480))
 
-                for line in lines:
-                    if line != []:
-                        Client.sendLineToServer(line)
+                    for line in lines:
+                        if line != []:
+                            Client.sendLineToServer(line)
 
             elif status == 2:
                 Client.sendResetToServer()

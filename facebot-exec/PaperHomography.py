@@ -11,6 +11,7 @@ import cv2
 import Utils
 import Camera
 
+backGroundTriplet = (255,0,255)
 def find_corners(image):
     im = cv2.Canny(image, 100, 200)
 
@@ -91,11 +92,23 @@ def getPaperOnly(image, grayImage):
     return image[150:260,140:480]
 
 # Assume 2 pictures are of same size.
+def isBlack(b, g, r):
+    return b == 0 and g == 0 and r == 0
+
+
+def isBackground(b, g, r):
+    return (b,g,r) == backGroundTriplet
+
+
 def mergeImages(foreground, background):
     # print str(topLeft) + "YOROYORO" + str(size)
+    # (255,0,255)
     for x in xrange (0,foreground.shape[0]):
         for y in xrange (0, foreground.shape[1]):
-            if foreground.item(x,y,0) != 0 or foreground.item(x,y,1) != 0 or foreground.item(x,y,2) != 0:
+            b = foreground.item(x, y, 0)
+            g = foreground.item(x, y, 1)
+            r = foreground.item(x, y, 0)
+            if not (isBlack(b,g,r) or isBackground(b,g,r)):
                 background[x,y] = foreground[x,y]
     return
 
@@ -146,6 +159,7 @@ def scanInkFromImage(image, paperPoints):
 
     # apply the four point transform to obtain a top-down
     # view of the original image
+    print paperPoints
     warped = four_point_transform(image, paperPoints)
     tuples = arrayToTuple(paperPoints)
     paperSize = paperSizer(sorted(tuples))
@@ -160,6 +174,7 @@ def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     # show the original and scanned images
     print "STEP 3: Apply perspective transform"
     # Resize image to paper size
+    print paperSize
     imageToImplant = cv2.resize(imageToImplant, paperSize)
     src = np.array(
         [[0, 0], [imageToImplant.shape[1] - 1, 0], [imageToImplant.shape[1] - 1, imageToImplant.shape[0] - 1], [0, imageToImplant.shape[0] - 1]],
@@ -174,6 +189,7 @@ def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
 def runDemoStill():
     pikachu = cv2.imread('Pikachu.jpg')
     paperImage = cv2.imread(Utils.adjustPathToOS('C:\Users\dbublil\Desktop\ImagesFOrCBV\PaperVideo (1-16-2017 6-07-27 PM)\PaperVideo 11.jpg'))
+    # paperImage = cv2.imread("IMG_9987.JPG")
     M = cv2.getRotationMatrix2D((paperImage.shape[1] / 2, paperImage.shape[0] / 2), 270, 1)
     paperImage = cv2.warpAffine(paperImage, M, (paperImage.shape[1], paperImage.shape[0]))
     paperImage = imutils.resize(paperImage, height=480, width= 640)
