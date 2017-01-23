@@ -12,7 +12,7 @@ import Utils
 import Camera
 
 backGroundTriplet = (255,0,255)
-WHITE_THRESHOLD = 200
+WHITE_THRESHOLD = 220
 
 
 def find_corners(image):
@@ -103,7 +103,7 @@ def isBackground(b, g, r):
     return (b,g,r) == backGroundTriplet
 
 def isWhiteish(b, g, r):
-    return np.mean([b, g, r]) > WHITE_THRESHOLD
+    return (b+g+r)/3 > WHITE_THRESHOLD
 
 
 def mergeImages(foreground, background):
@@ -115,11 +115,13 @@ def mergeImages(foreground, background):
             g = foreground.item(x, y, 1)
             r = foreground.item(x, y, 2)
             if not (isBlack(b,g,r) or isBackground(b,g,r)):
-                b = background.item(x, y, 0)
-                g = background.item(x, y, 1)
-                r = background.item(x, y, 2)
-                if (isWhiteish(b, g, r)):
-                    background[x,y] = foreground[x,y]
+                b1 = background.item(x, y, 0)
+                g1 = background.item(x, y, 1)
+                r1 = background.item(x, y, 2)
+                if (isWhiteish(b1, g1, r1)):
+                    background.itemset((x,y,0), b)
+                    background.itemset((x,y,1), g)
+                    background.itemset((x,y,2), r)
     return
 
 def findTopLeft(tuples):
@@ -182,10 +184,11 @@ def scanInkFromImage(image, paperPoints):
 
 def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     # show the original and scanned images
-    print "STEP 3: Apply perspective transform"
+    # print "STEP 3: Apply perspective transform"
     # Resize image to paper size
-    print paperSize
+    # print paperSize
     imageToImplant = cv2.resize(imageToImplant, paperSize)
+
     src = np.array(
         [[0, 0], [imageToImplant.shape[1] - 1, 0], [imageToImplant.shape[1] - 1, imageToImplant.shape[0] - 1], [0, imageToImplant.shape[0] - 1]],
         np.float32)
@@ -282,6 +285,6 @@ def runDemoVideoCam():
             break
 # cv2.imshow('cam',Camera.get_image_external())
 # runDemoStill()
-# runDemoVideo()
+runDemoVideo()
 # runDemoVideoCam()
 

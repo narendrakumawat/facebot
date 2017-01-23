@@ -7,7 +7,7 @@ import DetectBlackPixels
 import PaperHomography
 from pyimagesearch import imutils
 
-
+rectangle_threshold = 20
 STATUS_TEXT = [
     "Phase 0: draw lines",
     "Phase 1: play",
@@ -32,7 +32,7 @@ def centerOfRect(paperPoints):
 def isDifferentRectangle(lastPaperPoints, paperPoints):
     centerOfLast = centerOfRect(lastPaperPoints)
     centerOfThis = centerOfRect(paperPoints)
-    return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 50
+    return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 0
     pass
 
 
@@ -59,10 +59,10 @@ def gameLoop():
                 # apply the four point transform to obtain a top-down
                 # view of the original image
                 if (lastPaperPoints != None):
-                    if (not isDifferentRectangle(lastPaperPoints, paperPoints)):
-                        lastPaperPoints = paperPoints
-                    else:
-                        paperPoints = lastPaperPoints
+                    # if (not isDifferentRectangle(lastPaperPoints, paperPoints)):
+                        # lastPaperPoints = paperPoints
+                    # else:
+                    paperPoints = lastPaperPoints
                 pointAsTuple = PaperHomography.arrayToTuple(paperPoints)
                 lastPaperPoints = paperPoints
             elif lastPaperPoints != None:
