@@ -32,8 +32,16 @@ def centerOfRect(paperPoints):
 def isDifferentRectangle(lastPaperPoints, paperPoints):
     centerOfLast = centerOfRect(lastPaperPoints)
     centerOfThis = centerOfRect(paperPoints)
-    return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 0
+    return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 200
     pass
+
+
+def isValidRect(paperPoints):
+    for i in range (0,4):
+        for j in range (i + 1,4):
+            if (DetectBlackPixels.linearDistance(paperPoints[i],paperPoints[j]) < 50):
+                return False
+    return True
 
 
 def gameLoop():
@@ -54,15 +62,16 @@ def gameLoop():
             # Camera.show_image('game', frame)
 
             paperPoints = PaperHomography.getPaperPoints(paperImage)
+            # print str(paperPoints) + "HEREHREHRER"
             pointAsTuple = None
-            if (paperPoints != None):
+            if (paperPoints != None and isValidRect(paperPoints)):
                 # apply the four point transform to obtain a top-down
                 # view of the original image
                 if (lastPaperPoints != None):
-                    # if (not isDifferentRectangle(lastPaperPoints, paperPoints)):
-                        # lastPaperPoints = paperPoints
-                    # else:
-                    paperPoints = lastPaperPoints
+                    if (not isDifferentRectangle(lastPaperPoints, paperPoints)):
+                        lastPaperPoints = paperPoints
+                    else:
+                        paperPoints = lastPaperPoints
                 pointAsTuple = PaperHomography.arrayToTuple(paperPoints)
                 lastPaperPoints = paperPoints
             elif lastPaperPoints != None:

@@ -141,7 +141,7 @@ def getPaperPoints(image):
     edged = cv2.Canny(gray, 75, 200)
 
     # show the original image and the edge detected image
-    print "STEP 1: Edge Detection"
+    # print "STEP 1: Edge Detection"
 
     # find the contours in the edged image, keeping only the
     # largest ones, and initialize the screen contour
@@ -167,11 +167,11 @@ def getPaperPoints(image):
 
 def scanInkFromImage(image, paperPoints):
     # show the contour (outline) of the piece of paper
-    print "STEP 2: Find contours of paper"
+    # print "STEP 2: Find contours of paper"
 
     # apply the four point transform to obtain a top-down
     # view of the original image
-    print paperPoints
+    # print paperPoints
     warped = four_point_transform(image, paperPoints)
     tuples = arrayToTuple(paperPoints)
     paperSize = paperSizer(sorted(tuples))
@@ -220,12 +220,12 @@ def runDemoStill():
     paperImage = implantFrameOnPaper(paperImage,pikachu,paperSizes, pointAsTuple)
     cv2.imshow("Homogriphied", imutils.resize(paperImage))
     cv2.imshow("Scanned", imutils.resize(scannedInk, height=640, width=480))
-    print "done"
+    # print "done"
     cv2.waitKey(0)
 
 def runDemoVideo():
     pikachu = cv2.imread('Pikachu.jpg')
-    path = Utils.adjustPathToOS("C:\Users\dbublil\Desktop\ImagesFOrCBV\PaperVideo (1-16-2017 6-07-27 PM)\PaperVideo ")
+    path = Utils.adjustPathToOS("PaperVideo (1-16-2017 6-07-27 PM)\PaperVideo ")
     n = 1
     while (n < 50):
         n = n + 1
