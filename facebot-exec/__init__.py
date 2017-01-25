@@ -1,11 +1,15 @@
+import os
+import subprocess
 import Client
-import Processing
+import SyncGlobals
 import Camera
 import cv2
+import time
+from threading import Thread
+import Processing
 
 import DetectBlackPixels
 import PaperHomography
-from pyimagesearch import imutils
 
 rectangle_threshold = 20
 STATUS_TEXT = [
@@ -13,89 +17,46 @@ STATUS_TEXT = [
     "Phase 1: play",
     "Phase 2: click space to restart"
 ]
-STATUS_FUNC = [
-    Processing.phase0DetectAndSendLines,
-    Processing.phase1ProcessingFunc,
-    Processing.phase2ProcessingFunc
-]
-
-
-def centerOfRect(paperPoints):
-    sumX = 0
-    sumY = 0
-    for i in range (0,len(paperPoints)):
-        sumX += paperPoints[i][0]
-        sumY += paperPoints[i][1]
-    return (sumX / 4, sumY  / 4)
-
-
-def isDifferentRectangle(lastPaperPoints, paperPoints):
-    centerOfLast = centerOfRect(lastPaperPoints)
-    centerOfThis = centerOfRect(paperPoints)
-    return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 200
-    pass
-
-
-def isValidRect(paperPoints):
-    for i in range (0,4):
-        for j in range (i + 1,4):
-            if (DetectBlackPixels.linearDistance(paperPoints[i],paperPoints[j]) < 50):
-                return False
-    return True
 
 
 def gameLoop():
     status = 0
-    lastPaperPoints = None
-    scannedInk = None
 
-    while status < 3:
-        # image = Camera.get_image()
-        paperImage = Camera.get_image_external()
-        paperImage = cv2.flip(paperImage,1)
-        paperImage = imutils.resize(paperImage, height=480, width=640)
-        # Camera.show_image('original', image, STATUS_TEXT[status])
+    skip_frames = 20
+    while skip_frames > 0:
+        Camera.get_image_external()
+        skip_frames -= 1
 
-        # STATUS_FUNC[status](image)
-        frame = Client.getNextFrameFromServer()
-        if frame.any():
-            # Camera.show_image('game', frame)
+    autoPhase = 0
+    while True:
+        autoPhase += 1
+        camFrame = Camera.get_image_external()
+        camFrame = cv2.flip(camFrame,1)
+        camFrame = cv2.resize(camFrame, (640,480))
+        SyncGlobals.setCamFrame(camFrame)
 
-            paperPoints = PaperHomography.getPaperPoints(paperImage)
-            # print str(paperPoints) + "HEREHREHRER"
-            pointAsTuple = None
-            if (paperPoints != None and isValidRect(paperPoints)):
-                # apply the four point transform to obtain a top-down
-                # view of the original image
-                if (lastPaperPoints != None):
-                    if (not isDifferentRectangle(lastPaperPoints, paperPoints)):
-                        lastPaperPoints = paperPoints
-                    else:
-                        paperPoints = lastPaperPoints
-                pointAsTuple = PaperHomography.arrayToTuple(paperPoints)
-                lastPaperPoints = paperPoints
-            elif lastPaperPoints != None:
-                pointAsTuple = PaperHomography.arrayToTuple(lastPaperPoints)
+        gameFrame = Client.getNextFrameFromServer()
 
-            if pointAsTuple != None:
-                paperSize = PaperHomography.paperSizer(sorted(pointAsTuple))
-                paperSizes = (paperSize[1], paperSize[2])
-                #
-                # print str(lastPoints) + "KKK"
-                # if lastPoints[0] > 0 and lastPoints[1] > 0:
-                scannedInk = PaperHomography.scanInkFromImage(paperImage, lastPaperPoints)
+        if gameFrame.any():
+            SyncGlobals.setGameFrame(gameFrame)
 
-                # show the original and scanned images
-                # print "STEP 3: Apply perspective transform"
-                paperImage = PaperHomography.implantFrameOnPaper(paperImage, frame, paperSizes, pointAsTuple)
+            pointAsTuple = SyncGlobals.getPointAsTuple()
+            paperSizes = SyncGlobals.getPaperSizes()
 
-            cv2.imshow("Homogriphied", imutils.resize(paperImage))
+            if pointAsTuple is not None and paperSizes is not None:
+                camFrame = PaperHomography.implantFrameOnPaper(camFrame, gameFrame, paperSizes, pointAsTuple)
+
+        Camera.show_image("Draw me a way", camFrame, STATUS_TEXT[status])
 
         # space to continue
-        if cv2.waitKey(1) == 32:
+        # if cv2.waitKey(1) == 32:
+        if autoPhase >= 10:
+            autoPhase = 0
             if status == 0:
-                if scannedInk != None:
-                    lines = DetectBlackPixels.findBlackLines(imutils.resize(scannedInk, height=640, width=480))
+                scannedInk = SyncGlobals.getScannedInk()
+
+                if scannedInk is not None:
+                    lines = DetectBlackPixels.findBlackLines(cv2.resize(scannedInk, (640,480)))
 
                     for line in lines:
                         if line != []:
@@ -104,8 +65,7 @@ def gameLoop():
             elif status == 2:
                 Client.sendResetToServer()
 
-            else:
-                Client.sendNextPhaseToServer()
+            Client.sendNextPhaseToServer()
             status = (status + 1) % (len(STATUS_TEXT) - 1)
 
         # esc to quit
@@ -115,11 +75,21 @@ def gameLoop():
 
 
 def init():
-    Client.start()
+    if os.name == 'nt':
+        subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe"])
+    else:
+        subprocess.Popen([os.getcwd() + "/unity_builds/draw_client_osx.app/Contents/MacOS/draw_client_osx"])
 
+    time.sleep(3)
+
+    Client.start()
+    thread = Thread(target=Processing.processingLoop)
+    thread.start()
     gameLoop()
 
+    Processing.running = False
     cv2.destroyAllWindows()
     Client.stop()
+    print 'bye'
 
 init()

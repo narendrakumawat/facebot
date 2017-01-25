@@ -25,7 +25,6 @@ def start():
 def stop():
     print >> sys.stderr, 'closing socket'
     sock.close()
-    cv2.waitKey(0)
 
 def sendLineToServer(line):
     try:
@@ -41,7 +40,7 @@ def getNextFrameFromServer():
     try:
         # Send data
         message = '<NEXT>'
-        print >> sys.stderr, 'sending "%s"' % message
+        # print >> sys.stderr, 'sending "%s"' % message
         sock.sendall(message)
 
         # Look for the response
