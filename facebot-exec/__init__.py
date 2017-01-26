@@ -63,27 +63,27 @@ def gameLoop():
             paperPoints = PaperHomography.getPaperPoints(paperImage)
             # print str(paperPoints) + "HEREHREHRER"
             pointAsTuple = None
-            if (paperPoints != None and isValidRect(paperPoints)):
+            if (paperPoints is not None and isValidRect(paperPoints)):
                 # apply the four point transform to obtain a top-down
                 # view of the original image
-                if (lastPaperPoints != None):
+                if (lastPaperPoints is not None):
                     if (not isDifferentRectangle(lastPaperPoints, paperPoints)):
                         lastPaperPoints = paperPoints
                     else:
                         paperPoints = lastPaperPoints
                 pointAsTuple = PaperHomography.arrayToTuple(paperPoints)
                 lastPaperPoints = paperPoints
-            elif lastPaperPoints != None:
+            elif lastPaperPoints is not None:
                 pointAsTuple = PaperHomography.arrayToTuple(lastPaperPoints)
 
-            if pointAsTuple != None:
+            if pointAsTuple is not None:
                 paperSize = PaperHomography.paperSizer(sorted(pointAsTuple))
                 paperSizes = (paperSize[1], paperSize[2])
                 #
                 # print str(lastPoints) + "KKK"
                 # if lastPoints[0] > 0 and lastPoints[1] > 0:
                 scannedInk = PaperHomography.scanInkFromImage(paperImage, lastPaperPoints)
-
+                cv2.imshow("ink",scannedInk)
                 # show the original and scanned images
                 # print "STEP 3: Apply perspective transform"
                 paperImage = PaperHomography.implantFrameOnPaper(paperImage, frame, paperSizes, pointAsTuple)
