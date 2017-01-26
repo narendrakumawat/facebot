@@ -25,46 +25,46 @@ def isDifferentRectangle(lastPaperPoints, paperPoints):
     centerOfThis = centerOfRect(paperPoints)
     return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 200
 
-def processFrame(camImage):
-    lastPaperPoints = SyncGlobals.getPaperPoints()
-    newPaperPoints = PaperHomography.getPaperPoints(camImage)
-    pointAsTuple = None
-    paperPoints = None
+def processFrame():
+    camFrame = SyncGlobals.getCamFrame()
 
-    if newPaperPoints is not None and isValidRect(newPaperPoints):
-        # apply the four point transform to obtain a top-down
-        # view of the original image
-        if lastPaperPoints is not None:
-            if not isDifferentRectangle(lastPaperPoints, newPaperPoints):
-                SyncGlobals.setPaperPoints(newPaperPoints)
-                paperPoints = newPaperPoints
+    if camFrame is not None:
+        lastPaperPoints = SyncGlobals.getPaperPoints()
+        newPaperPoints = PaperHomography.getPaperPoints(camFrame)
+        pointAsTuple = None
+        paperPoints = None
+
+        if newPaperPoints is not None and isValidRect(newPaperPoints):
+            # apply the four point transform to obtain a top-down
+            # view of the original image
+            if lastPaperPoints is not None:
+                if not isDifferentRectangle(lastPaperPoints, newPaperPoints):
+                    SyncGlobals.setPaperPoints(newPaperPoints)
+                    paperPoints = newPaperPoints
+                else:
+                    paperPoints = lastPaperPoints
             else:
-                paperPoints = lastPaperPoints
-        else:
-            paperPoints = newPaperPoints
-        pointAsTuple = PaperHomography.arrayToTuple(paperPoints)
+                paperPoints = newPaperPoints
+            pointAsTuple = PaperHomography.arrayToTuple(paperPoints)
 
-    elif lastPaperPoints is not None:
-        pointAsTuple = PaperHomography.arrayToTuple(lastPaperPoints)
+        elif lastPaperPoints is not None:
+            pointAsTuple = PaperHomography.arrayToTuple(lastPaperPoints)
 
-    if pointAsTuple is not None:
-        SyncGlobals.setPointAsTuple(pointAsTuple)
+        if pointAsTuple is not None:
+            SyncGlobals.setPointAsTuple(pointAsTuple)
 
-        paperSize = PaperHomography.paperSizer(sorted(pointAsTuple))
-        paperSizes = (paperSize[1], paperSize[2])
-        SyncGlobals.setPaperSizes(paperSizes)
+            paperSize = PaperHomography.paperSizer(sorted(pointAsTuple))
+            paperSizes = (paperSize[1], paperSize[2])
+            SyncGlobals.setPaperSizes(paperSizes)
 
-    if paperPoints is not None:
-        scannedInk = PaperHomography.scanInkFromImage(camImage, paperPoints)
-        SyncGlobals.setScannedInk(scannedInk)
+        if paperPoints is not None:
+            scannedInk = PaperHomography.scanInkFromImage(camFrame, paperPoints)
+            SyncGlobals.setScannedInk(scannedInk)
 
 
 def processingLoop():
     while running:
-        camFrame = SyncGlobals.getCamFrame()
-
-        if camFrame is not None:
-            processFrame(camFrame)
+        processFrame()
 
     print 'Done Processing'
 

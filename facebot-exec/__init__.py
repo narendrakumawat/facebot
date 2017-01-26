@@ -44,13 +44,13 @@ def gameLoop():
             paperSizes = SyncGlobals.getPaperSizes()
 
             if pointAsTuple is not None and paperSizes is not None:
-                camFrame = PaperHomography.implantFrameOnPaper(camFrame, gameFrame, paperSizes, pointAsTuple)
+                camFrame = PaperHomography.implantFrameOnPaper(camFrame.copy(), gameFrame, paperSizes, pointAsTuple)
 
         Camera.show_image("Draw me a way", camFrame, STATUS_TEXT[status])
 
         # space to continue
         # if cv2.waitKey(1) == 32:
-        if autoPhase >= 10:
+        if autoPhase >= 5:
             autoPhase = 0
             if status == 0:
                 scannedInk = SyncGlobals.getScannedInk()
@@ -76,20 +76,23 @@ def gameLoop():
 
 def init():
     if os.name == 'nt':
-        subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe"])
+        unity = subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe"])
     else:
-        subprocess.Popen([os.getcwd() + "/unity_builds/draw_client_osx.app/Contents/MacOS/draw_client_osx"])
+        unity = subprocess.Popen([os.getcwd() + "/unity_builds/draw_client_osx.app/Contents/MacOS/draw_client_osx"])
 
     time.sleep(3)
 
-    Client.start()
-    thread = Thread(target=Processing.processingLoop)
-    thread.start()
-    gameLoop()
+    try:
+        Client.start()
+        thread = Thread(target=Processing.processingLoop)
+        thread.start()
+        gameLoop()
 
-    Processing.running = False
-    cv2.destroyAllWindows()
-    Client.stop()
-    print 'bye'
+    finally:
+        Processing.running = False
+        cv2.destroyAllWindows()
+        Client.stop()
+        unity.terminate()
+        print 'bye'
 
 init()
