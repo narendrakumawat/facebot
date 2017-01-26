@@ -2,6 +2,8 @@
 # python PaperHomography.py --image images/page.jpg
 
 # import the necessary packages
+import threading
+
 import pyimagesearch.transform as transform
 from pyimagesearch.transform import four_point_transform
 from skimage.filters import threshold_adaptive
@@ -106,8 +108,45 @@ def isWhiteish(b, g, r):
 
 
 def mergeImages(foreground, background):
+    # class merger(threading.Thread):
+    #     def __init__(self, threadID, foreground, background, x, y):
+    #         threading.Thread.__init__(self)
+    #         self.threadID = threadID
+    #         self.foreground = foreground
+    #         self.background = background
+    #         self.x = x
+    #         self.y = y
+    #
+    #     def run(self):
+    #         # print "Starting " + self.name
+    #         for x in range(self.x, self.x + 240):
+    #             for y in range(self.y, self.y+ 320):
+    #                 b = self.foreground.item(x, y, 0)
+    #                 g = self.foreground.item(x, y, 1)
+    #                 r = self.foreground.item(x, y, 2)
+    #                 if not (isBlack(b, g, r) or isBackground(b, g, r)):
+    #                     b1 = self.background.item(x, y, 0)
+    #                     g1 = self.background.item(x, y, 1)
+    #                     r1 = self.background.item(x, y, 2)
+    #                     if (isWhiteish(b1, g1, r1)):
+    #                         self.background.itemset((x, y, 0), b)
+    #                         self.background.itemset((x, y, 1), g)
+    #                         self.background.itemset((x, y, 2), r)
+    #         return
     # print str(topLeft) + "YOROYORO" + str(size)
-    # (255,0,255)
+    # # (255,0,255)
+    # merger1 = merger(0,foreground,background,0,0)
+    # merger2 = merger(1,foreground,background,240,0)
+    # merger3 = merger(2,foreground,background,0,320)
+    # merger4 = merger(3,foreground,background,240,320)
+    # merger1.start()
+    # merger2.start()
+    # merger3.start()
+    # merger4.start()
+    # merger1.join()
+    # merger2.join()
+    # merger3.join()
+    # merger4.join()
     for x in xrange (0,foreground.shape[0]):
         for y in xrange (0, foreground.shape[1]):
             b = foreground.item(x, y, 0)
@@ -155,9 +194,6 @@ def getPaperPoints(image):
 
         # if our approximated contour has four points, then we
         # can assume that we have found our screen
-        # TODO: Detect if there's a duplicate point in the result and not return it
-        # TODO: if so. To make it more harsh, It's probably better
-        # TODO: to demand the points to have a minimal linear distance thereshold between them.
         if len(approx) == 4:
 
             return approx.reshape(4,2)
@@ -181,6 +217,24 @@ def scanInkFromImage(image, paperPoints):
     warped = warped.astype("uint8") * 255
     return warped
 
+
+def sortPoints(pointAsTuple):
+    res = [(0,0),(0,0),(0,0),(0,0)]
+    for i in range (0,4):
+        point = pointAsTuple[i]
+        if (point[0] < 320):
+            if (point[1] < 240):
+                res[0] = point
+            else:
+                res[2] = point
+        else:
+            if (point[1] < 210):
+                res[1] = point
+            else:
+                res[3] = point
+    return res
+
+
 def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     # show the original and scanned images
     # print "STEP 3: Apply perspective transform"
@@ -191,8 +245,12 @@ def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     src = np.array(
         [[0, 0], [imageToImplant.shape[1] - 1, 0], [imageToImplant.shape[1] - 1, imageToImplant.shape[0] - 1], [0, imageToImplant.shape[0] - 1]],
         np.float32)
-    # dst = np.array([[tuples[3], tuples[0], tuples[1], tuples[2]]], np.float32)
-    dst = np.array([[pointAsTuple[1], pointAsTuple[2], pointAsTuple[3], pointAsTuple[0]]], np.float32)
+
+    src = np.array(
+        [[0, 0], [imageToImplant.shape[1] - 1, 0], [0, imageToImplant.shape[0] - 1], [imageToImplant.shape[1] - 1, imageToImplant.shape[0] - 1]],
+        np.float32)
+    pointAsTuple = sortPoints(pointAsTuple)
+    dst = np.array([[pointAsTuple[0], pointAsTuple[1], pointAsTuple[2], pointAsTuple[3]]], np.float32)
     ret = cv2.getPerspectiveTransform(src, dst)
     imageToImplantPaperPerspective = cv2.warpPerspective(imageToImplant, ret, ((paperImage.shape[1], paperImage.shape[0])))
     mergeImages(imageToImplantPaperPerspective, paperImage)
