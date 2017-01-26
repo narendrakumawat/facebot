@@ -33,7 +33,6 @@ def isDifferentRectangle(lastPaperPoints, paperPoints):
     centerOfLast = centerOfRect(lastPaperPoints)
     centerOfThis = centerOfRect(paperPoints)
     return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 200
-    pass
 
 
 def isValidRect(paperPoints):

@@ -156,9 +156,6 @@ def getPaperPoints(image):
 
         # if our approximated contour has four points, then we
         # can assume that we have found our screen
-        # TODO: Detect if there's a duplicate point in the result and not return it
-        # TODO: if so. To make it more harsh, It's probably better
-        # TODO: to demand the points to have a minimal linear distance thereshold between them.
         if len(approx) == 4:
 
             return approx.reshape(4,2)
@@ -182,6 +179,24 @@ def scanInkFromImage(image, paperPoints):
     warped = warped.astype("uint8") * 255
     return warped
 
+
+def sortPoints(pointAsTuple):
+    res = [0,0,0,0]
+    for i in range (0,4):
+        point = pointAsTuple[i]
+        if (point[0] < 320):
+            if (point[1] < 240):
+                res[0] = point
+            else:
+                res[2] = point
+        else:
+            if (point[1] < 240):
+                res[1] = point
+            else:
+                res[3] = point
+    return res
+
+
 def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     # show the original and scanned images
     # print "STEP 3: Apply perspective transform"
@@ -192,8 +207,12 @@ def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     src = np.array(
         [[0, 0], [imageToImplant.shape[1] - 1, 0], [imageToImplant.shape[1] - 1, imageToImplant.shape[0] - 1], [0, imageToImplant.shape[0] - 1]],
         np.float32)
-    # dst = np.array([[tuples[3], tuples[0], tuples[1], tuples[2]]], np.float32)
-    dst = np.array([[pointAsTuple[1], pointAsTuple[2], pointAsTuple[3], pointAsTuple[0]]], np.float32)
+
+    src = np.array(
+        [[0, 0], [imageToImplant.shape[1] - 1, 0], [0, imageToImplant.shape[0] - 1], [imageToImplant.shape[1] - 1, imageToImplant.shape[0] - 1]],
+        np.float32)
+    pointAsTuple = sortPoints(pointAsTuple)
+    dst = np.array([[pointAsTuple[0], pointAsTuple[1], pointAsTuple[2], pointAsTuple[3]]], np.float32)
     ret = cv2.getPerspectiveTransform(src, dst)
     imageToImplantPaperPerspective = cv2.warpPerspective(imageToImplant, ret, ((paperImage.shape[1], paperImage.shape[0])))
     mergeImages(imageToImplantPaperPerspective, paperImage)
@@ -285,6 +304,6 @@ def runDemoVideoCam():
             break
 # cv2.imshow('cam',Camera.get_image_external())
 # runDemoStill()
-runDemoVideo()
+# runDemoVideo()
 # runDemoVideoCam()
 
