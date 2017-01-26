@@ -27,9 +27,7 @@ def gameLoop():
         Camera.get_image_external()
         skip_frames -= 1
 
-    autoPhase = 0
     while True:
-        autoPhase += 1
         camFrame = Camera.get_image_external()
         camFrame = cv2.flip(camFrame,1)
         camFrame = cv2.resize(camFrame, (640,480))
@@ -49,9 +47,7 @@ def gameLoop():
         Camera.show_image("Draw me a way", camFrame, STATUS_TEXT[status])
 
         # space to continue
-        # if cv2.waitKey(1) == 32:
-        if autoPhase >= 5:
-            autoPhase = 0
+        if cv2.waitKey(1) == 32:
             if status == 0:
                 scannedInk = SyncGlobals.getScannedInk()
 
