@@ -14,8 +14,7 @@ import PaperHomography
 rectangle_threshold = 20
 STATUS_TEXT = [
     "Phase 0: draw lines",
-    "Phase 1: play",
-    "Phase 2: click space to restart"
+    "Phase 1: play"
 ]
 
 
@@ -44,7 +43,7 @@ def gameLoop():
             if pointAsTuple is not None and paperSizes is not None:
                 camFrame = PaperHomography.implantFrameOnPaper(camFrame.copy(), gameFrame, paperSizes, pointAsTuple)
 
-        Camera.show_image("Draw me a way", camFrame, STATUS_TEXT[status])
+        Camera.show_image("Draw me a way", cv2.flip(camFrame,1), STATUS_TEXT[status])
 
         # space to continue
         if cv2.waitKey(1) == 32:
@@ -52,17 +51,19 @@ def gameLoop():
                 scannedInk = SyncGlobals.getScannedInk()
 
                 if scannedInk is not None:
-                    lines = DetectBlackPixels.findBlackLines(cv2.resize(scannedInk, (640,480)))
+                    # lines = DetectBlackPixels.findBlackLines(cv2.resize(scannedInk, (640,480)))
+                    #
+                    # for line in lines:
+                    #     if line != []:
+                    #         Client.sendLineToServer(line)
 
-                    for line in lines:
-                        if line != []:
-                            Client.sendLineToServer(line)
+                    Client.sendLineToServer([(400,100), (280,450)])
+                    Client.sendPlayToServer()
 
-            elif status == 2:
+            elif status == 1:
                 Client.sendResetToServer()
 
-            Client.sendNextPhaseToServer()
-            status = (status + 1) % (len(STATUS_TEXT) - 1)
+            status = (status + 1) % len(STATUS_TEXT)
 
         # esc to quit
         if cv2.waitKey(1) == 27:
@@ -72,7 +73,7 @@ def gameLoop():
 
 def init():
     if os.name == 'nt':
-        unity = subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe"])
+        unity = subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe", "-batchmode"])
     else:
         unity = subprocess.Popen([os.getcwd() + "/unity_builds/draw_client_osx.app/Contents/MacOS/draw_client_osx"])
 

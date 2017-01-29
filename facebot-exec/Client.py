@@ -30,7 +30,7 @@ def sendLineToServer(line):
     try:
         # Send data
         message = str(line) + '<EOL>'
-        # print >> sys.stderr, 'sending "%s"' % message
+        print >> sys.stderr, 'sending line: "%s"' % message
         sock.sendall(message)
 
     except Exception, e:
@@ -62,10 +62,10 @@ def getNextFrameFromServer():
     except Exception, e:
         print >> sys.stderr, e
 
-def sendNextPhaseToServer():
+def sendPlayToServer():
     try:
         # Send data
-        message = '<PHASE>'
+        message = '<PLAY>'
         print >> sys.stderr, 'sending "%s"' % message
         sock.sendall(message)
 

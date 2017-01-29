@@ -13,7 +13,7 @@ import Utils
 import Camera
 
 backGroundTriplet = (255,0,255)
-WHITE_THRESHOLD = 220
+WHITE_THRESHOLD = 200
 
 
 def find_corners(image):
@@ -104,7 +104,7 @@ def isBackground(b, g, r):
     return (b,g,r) == backGroundTriplet
 
 def isWhiteish(b, g, r):
-    return (b+g+r)/3 > WHITE_THRESHOLD
+    return b > WHITE_THRESHOLD and g > WHITE_THRESHOLD and r > WHITE_THRESHOLD
 
 
 def mergeImages(foreground, background):

@@ -1,12 +1,13 @@
 import cv2
 import math
 
-BLACK_HIGH_BOUNDRY = 80
+BLACK_HIGH_BOUNDRY = 50
 ROWS = 640
 COLS = 480
 SIZE = (ROWS, COLS)
 RANGE_Y = range(0, 639)
 RANGE_X = range(0, 479)
+PAPER_MARGIN = 80
 
 def connectBlack(lines, num, dot, image, pixelBool):
     if pixelBool[dot[0]][dot[1]]:
@@ -38,16 +39,15 @@ def connectBlack(result, dot, image, pixelBool):
 def linearDistance(dot1, dot2):
     return math.sqrt(math.pow((dot1[0] - dot2[0]), 2) + math.pow((dot1[1] - dot2[1]), 2))
 
-def findBlackLines(image):
+def findBlackLines(gray_image):
     lines = []
     curLine = []
     bases = []
     pixelBool = [[False] * 640] * 480
-    # gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray_image = image
 
-    for i in xrange(COLS):
-        for j in xrange(ROWS):
+    cv2.imshow("scan", gray_image)
+    for i in xrange(PAPER_MARGIN, gray_image.shape[0] - PAPER_MARGIN):
+        for j in xrange(PAPER_MARGIN, gray_image.shape[1] - PAPER_MARGIN):
             black = (gray_image.item(i, j))
 
             if (black < BLACK_HIGH_BOUNDRY):
