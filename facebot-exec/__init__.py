@@ -51,14 +51,13 @@ def gameLoop():
                 scannedInk = SyncGlobals.getScannedInk()
 
                 if scannedInk is not None:
-                    # lines = DetectBlackPixels.findBlackLines(cv2.resize(scannedInk, (640,480)))
-                    #
-                    # for line in lines:
-                    #     if line != []:
-                    #         Client.sendLineToServer(line)
+                    lines = DetectBlackPixels.findBlackLines(cv2.resize(scannedInk, (640,480)))
 
-                    Client.sendLineToServer([(400,100), (280,450)])
-                    Client.sendPlayToServer()
+                    for line in lines:
+                        if line != []:
+                            Client.sendLineToServer(line)
+
+                Client.sendPlayToServer()
 
             elif status == 1:
                 Client.sendResetToServer()
@@ -73,7 +72,7 @@ def gameLoop():
 
 def init():
     if os.name == 'nt':
-        unity = subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe", "-batchmode"])
+        unity = subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe"])
     else:
         unity = subprocess.Popen([os.getcwd() + "/unity_builds/draw_client_osx.app/Contents/MacOS/draw_client_osx"])
 
