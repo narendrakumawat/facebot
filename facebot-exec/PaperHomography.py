@@ -101,7 +101,7 @@ def isBlack(b, g, r):
 
 
 def isBackground(b, g, r):
-    return (b,g,r) == backGroundTriplet
+    return b >= 240 and b < 256 and g >= 0 and g <= 10 and r >= 240 and r <= 256
 
 def isWhiteish(b, g, r):
     return b > WHITE_THRESHOLD and g > WHITE_THRESHOLD and r > WHITE_THRESHOLD
@@ -252,6 +252,7 @@ def implantFrameOnPaper(paperImage, imageToImplant, paperSize, pointAsTuple):
     pointAsTuple = sortPoints(pointAsTuple)
     dst = np.array([[pointAsTuple[0], pointAsTuple[1], pointAsTuple[2], pointAsTuple[3]]], np.float32)
     ret = cv2.getPerspectiveTransform(src, dst)
+    # print str(ret) + "MATRIX"
     imageToImplantPaperPerspective = cv2.warpPerspective(imageToImplant, ret, ((paperImage.shape[1], paperImage.shape[0])))
     mergeImages(imageToImplantPaperPerspective, paperImage)
     return paperImage

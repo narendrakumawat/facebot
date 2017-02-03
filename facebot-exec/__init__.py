@@ -49,15 +49,19 @@ def gameLoop():
         if cv2.waitKey(1) == 32:
             if status == 0:
                 scannedInk = SyncGlobals.getScannedInk()
-
+                cv2.imshow("scanned",scannedInk)
+                cv2.imshow("cannt",cv2.Canny(scannedInk,100,300))
                 if scannedInk is not None:
-                    # lines = DetectBlackPixels.findBlackLines(cv2.resize(scannedInk, (640,480)))
-                    #
-                    # for line in lines:
-                    #     if line != []:
-                    #         Client.sendLineToServer(line)
-                    print("hi")
-                Client.sendLineToServer([(400,100), (280,450)])
+                    edgy = cv2.resize(scannedInk,(640,480))
+                    lines = DetectBlackPixels.findBlackLines(cv2.Canny(edgy, 100, 300))
+                    num = 0
+                    for line in lines:
+                        if line is not []:
+                            num = num+1
+                            if num < 4:
+                                Client.sendLineToServer(line)
+
+
                 Client.sendPlayToServer()
 
             elif status == 1:
@@ -72,12 +76,12 @@ def gameLoop():
 
 
 def init():
-    # if os.name == 'nt':
-    #     unity = subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe", "-batchmode"])
-    # else:
-    #     unity = subprocess.Popen([os.getcwd() + "/unity_builds/draw_client_osx.app/Contents/MacOS/draw_client_osx"])
-    #
-    # time.sleep(3)
+    if os.name == 'nt':
+        unity = subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe"])
+    else:
+        unity = subprocess.Popen([os.getcwd() + "/unity_builds/draw_client_osx.app/Contents/MacOS/draw_client_osx"])
+
+    time.sleep(7)
 
     try:
         Client.start()
@@ -89,7 +93,7 @@ def init():
         Processing.running = False
         cv2.destroyAllWindows()
         Client.stop()
-        # unity.terminate()
+        unity.terminate()
         print 'bye'
 
 init()

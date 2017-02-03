@@ -7,33 +7,34 @@ COLS = 480
 SIZE = (ROWS, COLS)
 RANGE_Y = range(0, 639)
 RANGE_X = range(0, 479)
-PAPER_MARGIN = 80
+PAPER_MARGIN = 50
 
-def connectBlack(lines, num, dot, image, pixelBool):
-    if pixelBool[dot[0]][dot[1]]:
+pixelBool = [[False] * 640] * 480
+# def connectBlack(lines, num, dot, image, pixelBool):
+#     if pixelBool[dot[0]][dot[1]]:
+#         return
+#
+#     pixelBool[dot[0]][dot[1]] = True
+#     lines[num].append(dot)
+#
+#     for x in range(dot[0] - 1, dot[0] + 2):
+#         for y in range(dot[1] - 1, dot[1] + 2):
+#             if (x in RANGE_X and y in RANGE_Y and
+#                         image.item(x,y) == 255 and (not pixelBool[x][y]) and (x,y) != dot):
+#                 connectBlack(lines, num, (x,y), image, pixelBool)
+
+def connectBlack(result, dot, image, pixelBools):
+    if pixelBools[dot[0]][dot[1]]:
         return
 
-    pixelBool[dot[0]][dot[1]] = True
-    lines[num].append(dot)
-
-    for x in range(dot[0] - 1, dot[0] + 2):
-        for y in range(dot[1] - 1, dot[1] + 2):
-            if (x in RANGE_X and y in RANGE_Y and
-                        image.item(x,y) < 80 and pixelBool[x][y] == False and (x,y) != dot):
-                connectBlack(lines, num, (x,y), image, pixelBool)
-
-def connectBlack(result, dot, image, pixelBool):
-    if pixelBool[dot[0]][dot[1]]:
-        return
-
-    pixelBool[dot[0]][dot[1]] = True
+    pixelBools[dot[0]][dot[1]] = True
     result.append(dot)
-
-    for x in range(dot[0] - 1, dot[0] + 2):
-        for y in range(dot[1] - 1, dot[1] + 2):
+    ranger = 8
+    for x in range(dot[0] - ranger, dot[0] + ranger):
+        for y in range(dot[1] - ranger, dot[1] + ranger):
             if (x in RANGE_X and y in RANGE_Y and
-                        image.item(x,y) < 80 and pixelBool[x][y] == False and (x,y) != dot):
-                connectBlack(result, (x,y), image, pixelBool)
+                        image.item(x,y) == 255 and (not pixelBools[x][y]) and (x, y) != dot):
+                connectBlack(result, (x,y), image, pixelBools)
 
 
 def linearDistance(dot1, dot2):
@@ -41,19 +42,23 @@ def linearDistance(dot1, dot2):
 
 def findBlackLines(gray_image):
     lines = []
-    curLine = []
+    curLine = [[]] * 1000
+    print curLine
     bases = []
-    pixelBool = [[False] * 640] * 480
+    num = 0
+    pixelBools = [[False] * 640] * 480
+    # cv2.imshow("scan", gray_image)
+    for i in xrange(PAPER_MARGIN, gray_image.shape[0]):
+        for j in xrange(PAPER_MARGIN, gray_image.shape[1]):
+            pixel = (gray_image.item(i, j))
 
-    cv2.imshow("scan", gray_image)
-    for i in xrange(PAPER_MARGIN, gray_image.shape[0] - PAPER_MARGIN):
-        for j in xrange(PAPER_MARGIN, gray_image.shape[1] - PAPER_MARGIN):
-            black = (gray_image.item(i, j))
-
-            if (black < BLACK_HIGH_BOUNDRY):
-                connectBlack(curLine, (i, j), gray_image, pixelBool)
-                if len(curLine) > 50:
-                    lines.append(curLine)
+            if (pixel  == 255 and not pixelBool[i][j]):
+                connectBlack(curLine[num], (i, j), gray_image, pixelBools)
+                if len(curLine[num]) > 20:
+                    lines.append(curLine[num])
+                    num = num + 1
+                else:
+                    curLine[num] = []
 
 
     for i in range (len(lines)):
@@ -69,9 +74,10 @@ def findBlackLines(gray_image):
 def highlightBlack(image, dots, color):
     for i in range(len(dots)):
         if (dots[i] != None):
-            image.itemset((dots[i][0], dots[i][1], 0), color[0])
-            image.itemset((dots[i][0], dots[i][1], 1), color[1])
-            image.itemset((dots[i][0], dots[i][1], 2), color[2])
+            print dots[i]
+            image.itemset((dots[i][0], dots[i][1]), color[0])
+            image.itemset((dots[i][0], dots[i][1]), color[1])
+            image.itemset((dots[i][0], dots[i][1]), color[2])
     return image
 
 
