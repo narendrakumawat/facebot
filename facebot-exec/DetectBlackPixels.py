@@ -1,59 +1,56 @@
-import cv2
 import math
 
-BLACK_HIGH_BOUNDRY = 80
+BLACK_HIGH_BOUNDRY = 50
 ROWS = 640
 COLS = 480
 SIZE = (ROWS, COLS)
 RANGE_Y = range(0, 639)
 RANGE_X = range(0, 479)
+PAPER_MARGIN = 50
 
-def connectBlack(lines, num, dot, image, pixelBool):
-    if pixelBool[dot[0]][dot[1]]:
+pixelBool = [[False] * 640] * 480
+
+#Recursively attaches all black pixels which form
+#a line together to one connected line.
+#Also uses memorization to not check the same pixel twice.
+def connectBlack(result, dot, image, pixelBools):
+    #check if we already visited this pixel.
+    if pixelBools[dot[0]][dot[1]]:
         return
 
-    pixelBool[dot[0]][dot[1]] = True
-    lines[num].append(dot)
-
-    for x in range(dot[0] - 1, dot[0] + 2):
-        for y in range(dot[1] - 1, dot[1] + 2):
-            if (x in RANGE_X and y in RANGE_Y and
-                        image.item(x,y) < 80 and pixelBool[x][y] == False and (x,y) != dot):
-                connectBlack(lines, num, (x,y), image, pixelBool)
-
-def connectBlack(result, dot, image, pixelBool):
-    if pixelBool[dot[0]][dot[1]]:
-        return
-
-    pixelBool[dot[0]][dot[1]] = True
+    pixelBools[dot[0]][dot[1]] = True
+    #add dot to line
     result.append(dot)
-
-    for x in range(dot[0] - 1, dot[0] + 2):
-        for y in range(dot[1] - 1, dot[1] + 2):
+    ranger = 8
+    #radius of pixels is 8
+    for x in range(dot[0] - ranger, dot[0] + ranger):
+        for y in range(dot[1] - ranger, dot[1] + ranger):
             if (x in RANGE_X and y in RANGE_Y and
-                        image.item(x,y) < 80 and pixelBool[x][y] == False and (x,y) != dot):
-                connectBlack(result, (x,y), image, pixelBool)
+                        image.item(x,y) == 255 and (not pixelBools[x][y]) and (x, y) != dot):
+                connectBlack(result, (x,y), image, pixelBools)
 
 
 def linearDistance(dot1, dot2):
     return math.sqrt(math.pow((dot1[0] - dot2[0]), 2) + math.pow((dot1[1] - dot2[1]), 2))
 
-def findBlackLines(image):
+def findBlackLines(gray_image):
     lines = []
-    curLine = []
+    curLine = [[]] * 1000
+    print curLine
     bases = []
-    pixelBool = [[False] * 640] * 480
-    # gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray_image = image
+    num = 0
+    pixelBools = [[False] * 640] * 480
+    for i in xrange(PAPER_MARGIN, gray_image.shape[0]):
+        for j in xrange(PAPER_MARGIN, gray_image.shape[1]):
+            pixel = (gray_image.item(i, j))
 
-    for i in xrange(COLS):
-        for j in xrange(ROWS):
-            black = (gray_image.item(i, j))
-
-            if (black < BLACK_HIGH_BOUNDRY):
-                connectBlack(curLine, (i, j), gray_image, pixelBool)
-                if len(curLine) > 50:
-                    lines.append(curLine)
+            if (pixel  == 255 and not pixelBool[i][j]):
+                connectBlack(curLine[num], (i, j), gray_image, pixelBools)
+                if len(curLine[num]) > 20:
+                    lines.append(curLine[num])
+                    num = num + 1
+                else:
+                    curLine[num] = []
 
 
     for i in range (len(lines)):
@@ -66,15 +63,9 @@ def findBlackLines(image):
     return lines
 
 
-def highlightBlack(image, dots, color):
-    for i in range(len(dots)):
-        if (dots[i] != None):
-            image.itemset((dots[i][0], dots[i][1], 0), color[0])
-            image.itemset((dots[i][0], dots[i][1], 1), color[1])
-            image.itemset((dots[i][0], dots[i][1], 2), color[2])
-    return image
-
-
+#A pixel which is a corner is a pixel
+#which has only 1 neighbour, as it is the
+#tail of the line.
 def isCorner(dot, pixelBool):
     foundOne = False
     for i in range(dot[0] - 1, dot[0] + 2):

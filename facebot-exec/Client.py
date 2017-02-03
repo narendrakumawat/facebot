@@ -6,15 +6,15 @@ import base64
 from PIL import Image
 from StringIO import StringIO
 
+# Create a TCP/IP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Convert compressed PNG string to OpenCV format
 def readb64(base64_string):
     sbuf = StringIO()
     sbuf.write(base64.b64decode(base64_string))
     pimg = Image.open(sbuf)
     return cv2.cvtColor(np.array(pimg), cv2.COLOR_RGB2BGR)
-
-# Create a TCP/IP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
 
 # Connect the socket to the port where the server is listening
 def start():
@@ -22,72 +22,63 @@ def start():
     print >>sys.stderr, 'connecting to %s port %s' % server_address
     sock.connect(server_address)
 
+# Close the socket
 def stop():
     print >> sys.stderr, 'closing socket'
     sock.close()
-    cv2.waitKey(0)
 
+# Send single line to server
 def sendLineToServer(line):
     try:
-        # Send data
         message = str(line) + '<EOL>'
-        # print >> sys.stderr, 'sending "%s"' % message
         sock.sendall(message)
 
     except Exception, e:
         print >> sys.stderr, e
 
+# Send request for next frame to server, and cache the recieved data
 def getNextFrameFromServer():
     try:
-        # Send data
         message = '<NEXT>'
-        print >> sys.stderr, 'sending "%s"' % message
         sock.sendall(message)
 
-        # Look for the response
+        # Wait for the complete response
         img_str = ''
-
         while not img_str.endswith('<EOF>'):
             data_str = sock.recv(16384)
             img_str += data_str
 
-            # print >> sys.stderr, 'received "%s"' % data_str
-
         # when frame received
         if len(img_str) > 0:
             frame = readb64(img_str.replace('<EOF>', ''))
-            # print >> sys.stderr, frame
 
         return frame
 
     except Exception, e:
         print >> sys.stderr, e
 
-def sendNextPhaseToServer():
+# Send play request to server
+def sendPlayToServer():
     try:
-        # Send data
-        message = '<PHASE>'
-        print >> sys.stderr, 'sending "%s"' % message
+        message = '<PLAY>'
         sock.sendall(message)
 
     except Exception, e:
         print >> sys.stderr, e
 
+# Send reset game request to server
 def sendResetToServer():
     try:
-        # Send data
         message = '<RESET>'
-        print >> sys.stderr, 'sending "%s"' % message
         sock.sendall(message)
 
     except Exception, e:
         print >> sys.stderr, e
 
+# Send shutdown request to server
 def sendQuitToServer():
     try:
-        # Send data
         message = '<QUIT>'
-        print >> sys.stderr, 'sending "%s"' % message
         sock.sendall(message)
 
     except Exception, e:

@@ -1,124 +1,117 @@
+import os
+import subprocess
 import Client
-import Processing
+import SyncGlobals
 import Camera
 import cv2
-
+import time
+from threading import Thread
+import Processing
 import DetectBlackPixels
 import PaperHomography
-from pyimagesearch import imutils
 
-rectangle_threshold = 20
 STATUS_TEXT = [
-    "Phase 0: draw lines",
-    "Phase 1: play",
-    "Phase 2: click space to restart"
+    "Phase 0: draw lines (SPACE to play, ESC to quit)",
+    "Phase 1: play (SPACE to reset, ESC to quit)"
 ]
-STATUS_FUNC = [
-    Processing.phase0DetectAndSendLines,
-    Processing.phase1ProcessingFunc,
-    Processing.phase2ProcessingFunc
-]
-
-
-def centerOfRect(paperPoints):
-    sumX = 0
-    sumY = 0
-    for i in range (0,len(paperPoints)):
-        sumX += paperPoints[i][0]
-        sumY += paperPoints[i][1]
-    return (sumX / 4, sumY  / 4)
-
-
-def isDifferentRectangle(lastPaperPoints, paperPoints):
-    centerOfLast = centerOfRect(lastPaperPoints)
-    centerOfThis = centerOfRect(paperPoints)
-    return DetectBlackPixels.linearDistance(centerOfLast, centerOfThis) > 200
-
-
-def isValidRect(paperPoints):
-    for i in range (0,4):
-        for j in range (i + 1,4):
-            if (DetectBlackPixels.linearDistance(paperPoints[i],paperPoints[j]) < 50):
-                return False
-    return True
 
 
 def gameLoop():
     status = 0
-    lastPaperPoints = None
-    scannedInk = None
 
-    while status < 3:
-        # image = Camera.get_image()
-        paperImage = Camera.get_image_external()
-        paperImage = cv2.flip(paperImage,1)
-        paperImage = imutils.resize(paperImage, height=480, width=640)
-        # Camera.show_image('original', image, STATUS_TEXT[status])
+    # skip first 20 frames of video capture to allow camera initialization
+    skip_frames = 20
+    while skip_frames > 0:
+        Camera.get_image_external()
+        skip_frames -= 1
 
-        # STATUS_FUNC[status](image)
-        frame = Client.getNextFrameFromServer()
-        if frame.any():
-            # Camera.show_image('game', frame)
+    while True:
+        # get and cache current camera frame
+        camFrame = Camera.get_image_external()
+        camFrame = cv2.flip(camFrame,1)
+        camFrame = cv2.resize(camFrame, (640,480))
+        SyncGlobals.setCamFrame(camFrame)
 
-            paperPoints = PaperHomography.getPaperPoints(paperImage)
-            # print str(paperPoints) + "HEREHREHRER"
-            pointAsTuple = None
-            if (paperPoints is not None and isValidRect(paperPoints)):
-                # apply the four point transform to obtain a top-down
-                # view of the original image
-                if (lastPaperPoints is not None):
-                    if (not isDifferentRectangle(lastPaperPoints, paperPoints)):
-                        lastPaperPoints = paperPoints
-                    else:
-                        paperPoints = lastPaperPoints
-                pointAsTuple = PaperHomography.arrayToTuple(paperPoints)
-                lastPaperPoints = paperPoints
-            elif lastPaperPoints is not None:
-                pointAsTuple = PaperHomography.arrayToTuple(lastPaperPoints)
+        # get next game frame from server
+        gameFrame = Client.getNextFrameFromServer()
 
-            if pointAsTuple is not None:
-                paperSize = PaperHomography.paperSizer(sorted(pointAsTuple))
-                paperSizes = (paperSize[1], paperSize[2])
-                #
-                # print str(lastPoints) + "KKK"
-                # if lastPoints[0] > 0 and lastPoints[1] > 0:
-                scannedInk = PaperHomography.scanInkFromImage(paperImage, lastPaperPoints)
-                cv2.imshow("ink",scannedInk)
-                # show the original and scanned images
-                # print "STEP 3: Apply perspective transform"
-                paperImage = PaperHomography.implantFrameOnPaper(paperImage, frame, paperSizes, pointAsTuple)
+        if gameFrame.any():
+            # cache current game frame
+            SyncGlobals.setGameFrame(gameFrame)
 
-            cv2.imshow("Homogriphied", imutils.resize(paperImage))
+            # get cached paper position and size
+            pointAsTuple = SyncGlobals.getPointAsTuple()
+            paperSizes = SyncGlobals.getPaperSizes()
+
+            # paper position recognized
+            if pointAsTuple is not None and paperSizes is not None:
+                # merge game frame into camera frame on top of recognized paper
+                camFrame = PaperHomography.implantFrameOnPaper(camFrame.copy(), gameFrame, paperSizes, pointAsTuple)
+
+        Camera.show_image("Draw me a way", cv2.flip(camFrame,1), STATUS_TEXT[status])
 
         # space to continue
         if cv2.waitKey(1) == 32:
+            # user wants to start playing the game
             if status == 0:
-                if scannedInk != None:
-                    lines = DetectBlackPixels.findBlackLines(imutils.resize(scannedInk, height=640, width=480))
+                # get cached state of paper
+                scannedInk = SyncGlobals.getScannedInk()
 
+                if scannedInk is not None:
+                    # capture lines from cached state of paper
+                    edgy = cv2.resize(scannedInk,(640,480))
+                    lines = DetectBlackPixels.findBlackLines(cv2.Canny(edgy, 100, 300))
+
+                    # send recognized lines to game server, but limit to 4 lines
+                    num = 0
                     for line in lines:
-                        if line != []:
-                            Client.sendLineToServer(line)
+                        if line is not []:
+                            num += 1
+                            if num < 4:
+                                Client.sendLineToServer(line)
+                            else:
+                                break
 
-            elif status == 2:
+                # start playing the game
+                Client.sendPlayToServer()
+
+            # user wants to reset the game
+            elif status == 1:
                 Client.sendResetToServer()
 
-            else:
-                Client.sendNextPhaseToServer()
-            status = (status + 1) % (len(STATUS_TEXT) - 1)
+            # advance game state
+            status = (status + 1) % len(STATUS_TEXT)
 
-        # esc to quit
+        # user wants to quit
         if cv2.waitKey(1) == 27:
             Client.sendQuitToServer()
             break
 
 
 def init():
-    Client.start()
+    # start unity game process for current os
+    if os.name == 'nt':
+        unity = subprocess.Popen([os.getcwd() + "\unity_builds\draw_client_windows.exe"])
+    else:
+        unity = subprocess.Popen([os.getcwd() + "/unity_builds/draw_client_osx.app/Contents/MacOS/draw_client_osx"])
 
-    gameLoop()
+    # wait for unity process to load
+    time.sleep(7)
 
-    cv2.destroyAllWindows()
-    Client.stop()
+    try:
+        # start communication with game server
+        Client.start()
+        thread = Thread(target=Processing.processingLoop)
+        thread.start()
+        # start game processing loop
+        gameLoop()
+
+    finally:
+        # shut down connection, close windows, and terminate
+        Processing.running = False
+        cv2.destroyAllWindows()
+        Client.stop()
+        unity.terminate()
+        print 'bye'
 
 init()
