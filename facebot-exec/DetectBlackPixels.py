@@ -1,4 +1,3 @@
-import cv2
 import math
 
 BLACK_HIGH_BOUNDRY = 50
@@ -10,26 +9,20 @@ RANGE_X = range(0, 479)
 PAPER_MARGIN = 50
 
 pixelBool = [[False] * 640] * 480
-# def connectBlack(lines, num, dot, image, pixelBool):
-#     if pixelBool[dot[0]][dot[1]]:
-#         return
-#
-#     pixelBool[dot[0]][dot[1]] = True
-#     lines[num].append(dot)
-#
-#     for x in range(dot[0] - 1, dot[0] + 2):
-#         for y in range(dot[1] - 1, dot[1] + 2):
-#             if (x in RANGE_X and y in RANGE_Y and
-#                         image.item(x,y) == 255 and (not pixelBool[x][y]) and (x,y) != dot):
-#                 connectBlack(lines, num, (x,y), image, pixelBool)
 
+#Recursively attaches all black pixels which form
+#a line together to one connected line.
+#Also uses memorization to not check the same pixel twice.
 def connectBlack(result, dot, image, pixelBools):
+    #check if we already visited this pixel.
     if pixelBools[dot[0]][dot[1]]:
         return
 
     pixelBools[dot[0]][dot[1]] = True
+    #add dot to line
     result.append(dot)
     ranger = 8
+    #radius of pixels is 8
     for x in range(dot[0] - ranger, dot[0] + ranger):
         for y in range(dot[1] - ranger, dot[1] + ranger):
             if (x in RANGE_X and y in RANGE_Y and
@@ -47,7 +40,6 @@ def findBlackLines(gray_image):
     bases = []
     num = 0
     pixelBools = [[False] * 640] * 480
-    # cv2.imshow("scan", gray_image)
     for i in xrange(PAPER_MARGIN, gray_image.shape[0]):
         for j in xrange(PAPER_MARGIN, gray_image.shape[1]):
             pixel = (gray_image.item(i, j))
@@ -71,16 +63,9 @@ def findBlackLines(gray_image):
     return lines
 
 
-def highlightBlack(image, dots, color):
-    for i in range(len(dots)):
-        if (dots[i] != None):
-            print dots[i]
-            image.itemset((dots[i][0], dots[i][1]), color[0])
-            image.itemset((dots[i][0], dots[i][1]), color[1])
-            image.itemset((dots[i][0], dots[i][1]), color[2])
-    return image
-
-
+#A pixel which is a corner is a pixel
+#which has only 1 neighbour, as it is the
+#tail of the line.
 def isCorner(dot, pixelBool):
     foundOne = False
     for i in range(dot[0] - 1, dot[0] + 2):
